@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/lotto/:match*",
+      "destination": "https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=:match*"
+    }
+  ]
+}
