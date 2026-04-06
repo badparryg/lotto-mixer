@@ -1,0 +1,34 @@
+name: Automated Lotto Data Sync
+
+on:
+  schedule:
+    # Runs every Saturday at 12:45 UTC (9:45 PM KST) 
+    - cron: '45 12 * * 6'
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Run Lotto Sync Script
+        run: |
+          node scripts/update-lotto-data.mjs "www"
+          
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add www/data/lotto-history.js www/data/latest-draw.js
+          git commit -m "🤖 Auto-update lotto data" || exit 0
+          git push

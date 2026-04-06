@@ -1,0 +1,11 @@
+{
+  "appId": "com.lottomixer.app",
+  "appName": "Lotto Weekly Mixer",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

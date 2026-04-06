@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로또 추천 분석기</title>
+    <meta
+      name="description"
+      content="로또 당첨 이력을 분석해서 추천 조합을 만들고, 선택한 조합의 번호 패턴까지 확인할 수 있는 브라우저 앱입니다."
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#07131f" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=SUIT:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="icon" href="apple-touch-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="backdrop backdrop-a"></div>
+    <div class="backdrop backdrop-b"></div>
+    <main class="dashboard-layout">
+      <!-- SIDEBAR -->
+      <aside class="dashboard-sidebar">
+        <header class="app-header">
+           <p class="eyebrow">Lotto Weekly Mixer</p>
+           <h1>번호 추출 통제실</h1>
+        </header>
+
+        <div class="sidebar-wrapper glass-panel">
+          <form id="generatorForm" class="sidebar-form">
+            <div class="control-grid compact-grid">
+              <label class="field">
+                <span>추천 모드</span>
+                <select id="profile">
+                  <option value="random" selected>오토 믹스 (랜덤)</option>
+                  <option value="balanced">균형형</option>
+                  <option value="trend">트렌드형</option>
+                  <option value="contrarian">역발상형</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>추천 개수</span>
+                <select id="ticketCount">
+                  <option value="1">1개</option>
+                  <option value="3">3개</option>
+                  <option value="5" selected>5개</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>최근 흐름 반영</span>
+                <select id="recentWindow">
+                  <option value="12">최근 12회</option>
+                  <option value="24" selected>최근 24회</option>
+                  <option value="40">최근 40회</option>
+                </select>
+              </label>
+            </div>
+
+            <details class="filter-group number-board-group">
+              <summary class="filter-head" style="cursor: pointer; list-style: none; user-select: none;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.6rem;">
+                  <h3 style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
+                    번호 필터 구성 (3-State)
+                    <svg class="dropdown-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </h3>
+                  <button type="button" id="resetFiltersBtn" class="reset-button" title="모든 고정 및 제외 번호 초기화" onclick="event.preventDefault(); event.stopPropagation();">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    초기화
+                  </button>
+                </div>
+                <p>숫자를 누를 때마다 <strong style="vertical-align: baseline;"><span class="text-include">포함</span> ➔ <span class="text-exclude">제외</span> ➔ 취소</strong> 순으로 바뀝니다.</p>
+              </summary>
+              <div style="margin-top: 1rem;">
+                <div id="unifiedNumberGrid" class="number-board unified-board haptic-grid"></div>
+              </div>
+            </details>
+
+            <div class="filter-preview-panel">
+              <div class="filter-chips-container">
+                <p class="filter-hint">선택한 조건 칩이 여기에 표시됩니다.</p>
+                <div id="includeChips" class="chip-group include-chips"></div>
+                <div id="excludeChips" class="chip-group exclude-chips"></div>
+              </div>
+            </div>
+
+            <p id="resultsFeedback" class="toolbar-feedback" aria-live="polite">
+              설정을 마치고, 아래 생성 버튼을 눌러주세요.
+            </p>
+            <p id="historySyncStatus" class="history-sync-status" aria-live="polite">
+              오프라인-First 로직: 로컬 데이터를 평가 중입니다.
+            </p>
+          </form>
+        </div>
+
+        <div class="generator-action-row sticky-action-bar" style="background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; margin: 0 !important;">
+          <button type="submit" form="generatorForm" class="primary-button action-button generate-action-button" style="box-shadow: none !important;">
+            이번 주 번호 생성하기
+          </button>
+        </div>
+      </aside>
+
+      <!-- MAIN DASHBOARD -->
+      <section class="dashboard-main">
+        <section class="hero glass-panel premium-glow">
+          <div id="heroStats" class="hero-stats"></div>
+        </section>
+
+        <section id="resultsPanel" class="results-layout glass-panel">
+          <div class="tickets-column">
+            <div class="section-head">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+                <div>
+                  <p class="eyebrow">새로운 조합</p>
+                  <h2 style="margin: 0;">이번 주 추천 세트</h2>
+                </div>
+                <button type="button" id="refreshTicketsBtn" class="reset-button" title="현재 조건으로 세트 다시 생성하기">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                  다시 생성
+                </button>
+              </div>
+              <p id="generationMeta" class="section-note" style="margin-top: 0.6rem;"></p>
+            </div>
+            <p class="workspace-note">카드를 누르면 내부에 히트맵 기반 상세 패턴이 펼쳐집니다.</p>
+            <div id="ticketsGrid" class="tickets-grid"></div>
+          </div>
+
+          <aside id="patternPanel" class="pattern-panel">
+            <div class="pattern-panel-head">
+              <div>
+                <p class="eyebrow">심도 분석</p>
+                <h3 id="patternTitle">조합을 선택해 주세요</h3>
+              </div>
+              <p id="patternSummary" class="pattern-summary" style="display: none;">선택한 조합 카드의 통계와 열화상 지도를 구성합니다.</p>
+            </div>
+            <div id="heatmapLegend" class="heatmap-legend" style="display: none;">
+              <span class="legend-color-box"></span>
+              <span class="legend-text">붉은 배경은 사용자가 측면에서 설정한 '최근 흐름 반영' 기간 내 누적 당첨 밀도를 나타냅니다.</span>
+            </div>
+            <div id="patternBoard" class="pattern-board heatmap-board"></div>
+          </aside>
+        </section>
+
+        <div class="dashboard-bottom-row">
+          <section class="glass-panel">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">분석 포인트</p>
+                <h2>최근 핫&콜드 구간</h2>
+              </div>
+            </div>
+            <div id="analysisGrid" class="analysis-grid"></div>
+          </section>
+
+          <section class="glass-panel">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">점수판</p>
+                <h2>알고리즘 상위 번호</h2>
+              </div>
+            </div>
+            <div id="scoreboard" class="scoreboard"></div>
+          </section>
+        </div>
+      </section>
+
+      <footer class="footer-note">
+        <p>기본 이력: `data/lotto-history.js` | 최신 회차: 온라인 직접 동기화(혹은 `data/latest-draw.js` 수정)</p>
+      </footer>
+    </main>
+
+    <noscript>이 페이지는 JavaScript가 켜져 있어야 동작합니다.</noscript>
+    <script src="./data/lotto-history.js"></script>
+    <script src="./data/latest-draw.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
