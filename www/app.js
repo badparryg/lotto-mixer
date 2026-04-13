@@ -1438,9 +1438,17 @@
         } else {
           poolPanel.style.display = "none";
         }
+        if (typeof renderPoolGrid === "function") renderPoolGrid();
       }
       profileEl.addEventListener("change", togglePoolPanel);
       togglePoolPanel();
+    }
+    
+    var ticketCountEl = document.getElementById("ticketCount");
+    if (ticketCountEl) {
+      ticketCountEl.addEventListener("change", function() {
+        if (typeof renderPoolGrid === "function") renderPoolGrid();
+      });
     }
 
     var poolGridTarget = document.getElementById("poolNumberGrid");
@@ -1457,14 +1465,33 @@
       }).join("");
       
       var size = appState.poolNumberSet.size;
+      var generateBtn = document.getElementById("generateBtn");
+      var currentProfile = profileEl ? profileEl.value : "balanced";
+      var currentTicketCount = ticketCountEl ? parseInt(ticketCountEl.value, 10) : 5;
+      var isPoolMix = currentProfile === "pool_mix";
+
       if (poolCountEl) poolCountEl.textContent = size;
       if (poolHelperEl) {
         if (size < 6) {
-          poolHelperEl.textContent = "6개 이상의 숫자를 입력해 주세요.";
+          poolHelperEl.textContent = "6개 이상의 숫자를 선택해주세요.";
+          poolHelperEl.style.color = "var(--danger, #ff4e4e)";
+          if (isPoolMix && generateBtn) generateBtn.disabled = true;
         } else {
           var combs = combinations(size, 6);
-          poolHelperEl.textContent = "총 " + combs.toLocaleString() + "개의 조합 중 추출됩니다.";
+          if (combs < currentTicketCount) {
+             poolHelperEl.textContent = "선택된 풀 조합의 수(" + combs.toLocaleString() + "개)가 요청한 생성 개수(" + currentTicketCount + "개)보다 적습니다.";
+             poolHelperEl.style.color = "var(--danger, #ff4e4e)";
+             if (isPoolMix && generateBtn) generateBtn.disabled = true;
+          } else {
+            poolHelperEl.textContent = "총 " + combs.toLocaleString() + "개의 조합 중 추출됩니다.";
+            poolHelperEl.style.color = "";
+            if (isPoolMix && generateBtn) generateBtn.disabled = false;
+          }
         }
+      }
+      
+      if (!isPoolMix && generateBtn) {
+        generateBtn.disabled = false;
       }
     }
 
