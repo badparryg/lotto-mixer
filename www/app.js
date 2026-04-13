@@ -1447,10 +1447,13 @@
     var poolPanel = document.getElementById("poolPanel");
     if (profileEl && poolPanel) {
       function togglePoolPanel() {
+        var recentWindowField = document.getElementById("recentWindowField");
         if (profileEl.value === "pool_mix") {
           poolPanel.style.display = "block";
+          if (recentWindowField) recentWindowField.style.display = "none";
         } else {
           poolPanel.style.display = "none";
+          if (recentWindowField) recentWindowField.style.display = "flex";
         }
         if (typeof renderPoolGrid === "function") renderPoolGrid();
       }
