@@ -1453,7 +1453,7 @@
           if (recentWindowField) recentWindowField.style.display = "none";
         } else {
           poolPanel.style.display = "none";
-          if (recentWindowField) recentWindowField.style.display = "flex";
+          if (recentWindowField) recentWindowField.style.display = "";
         }
         if (typeof renderPoolGrid === "function") renderPoolGrid();
       }
