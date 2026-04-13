@@ -165,6 +165,42 @@
       });
   }
 
+  function combinations(n, k) {
+    if (k > n || k < 0) return 0;
+    if (k === 0 || k === n) return 1;
+    if (k * 2 > n) k = n - k;
+    var result = 1;
+    for (var i = 1; i <= k; i++) {
+      result = (result * (n - i + 1)) / i;
+    }
+    return result;
+  }
+
+  function extractNumbersFromText(text) {
+    var rawText = text || "";
+    var numbers = [];
+    var qrMatch = rawText.match(/v=([a-zA-Z0-9]+)/);
+    
+    if (qrMatch) {
+      var data = qrMatch[1];
+      var body = data.substring(4);
+      var parts = body.split(/[A-Za-z]/);
+      parts.forEach(function(part) {
+        if (part.length === 12) {
+          for (var i = 0; i < 12; i += 2) {
+            numbers.push(parseInt(part.substring(i, i+2), 10));
+          }
+        }
+      });
+    }
+    var tokens = rawText.match(/\b([1-9]|[1-3][0-9]|4[0-5])\b/g) || [];
+    tokens.forEach(function(t) {
+      numbers.push(parseInt(t, 10));
+    });
+    
+    return Array.from(new Set(numbers)).filter(function(n) { return n >= 1 && n <= 45; }).sort(function(a,b){return a-b;});
+  }
+
   function escapeHtml(value) {
     return String(value)
       .replace(/&/g, "&amp;")
@@ -583,6 +619,7 @@
   function generateRecommendations(history, options) {
     var profile = options && options.profile ? options.profile : "balanced";
     var ticketCount = Number(options && options.ticketCount) || 5;
+    var poolNumbers = options && options.poolNumbers ? options.poolNumbers : [];
     var recentWindow = Number(options && options.recentWindow) || 24;
     var filterState = buildFilterState(options);
     var stats = analyzeHistory(history, { recentWindow: recentWindow });
@@ -604,6 +641,12 @@
         Date.now(),
     );
 
+    if (profile === "pool_mix") {
+      filterState.allowedNumbers = poolNumbers.filter(function(n) {
+        return !filterState.excludedSet.has(n) || filterState.includedSet.has(n);
+      });
+    }
+
     if (filterState.includedNumbers.length > 6) {
       return { profile: profile, ticketCount: ticketCount, recentWindow: recentWindow, stats: stats, scoreTable: scoreTable, tickets: tickets, filterState: filterState, error: "고정 번호는 최대 6개까지 선택할 수 있습니다." };
     }
@@ -617,7 +660,7 @@
 
     while (tickets.length < ticketCount && attempts < maxAttempts) {
       attempts += 1;
-      var currentProfile = profile === "random" ? ["balanced", "trend", "contrarian"][Math.floor(rng() * 3)] : profile;
+      var currentProfile = profile === "random" || profile === "pool_mix" ? ["balanced", "trend", "contrarian"][Math.floor(rng() * 3)] : profile;
       var currentScoreMap = scoreMap;
       if (profile === "random") {
         var tTable = buildScoreTable(stats, currentProfile);
@@ -716,6 +759,7 @@
     var profileEl = document.getElementById("profile");
     var countEl = document.getElementById("ticketCount");
     var windowEl = document.getElementById("recentWindow");
+    var poolInput = document.getElementById("poolInput");
 
     return {
       profile: profileEl ? profileEl.value : "balanced",
@@ -723,6 +767,7 @@
       recentWindow: windowEl ? windowEl.value : "24",
       includedNumbers: includedNumbers,
       excludedNumbers: excludedNumbers,
+      poolNumbers: poolInput ? extractNumbersFromText(poolInput.value) : []
     };
   }
 
@@ -1357,6 +1402,90 @@
     if (refreshTicketsBtn) {
       refreshTicketsBtn.addEventListener("click", function() {
         runApp(collectFormOptions());
+      });
+    }
+    
+    var profileEl = document.getElementById("profile");
+    var poolPanel = document.getElementById("poolPanel");
+    if (profileEl && poolPanel) {
+      function togglePoolPanel() {
+        if (profileEl.value === "pool_mix") {
+          poolPanel.style.display = "block";
+        } else {
+          poolPanel.style.display = "none";
+        }
+      }
+      profileEl.addEventListener("change", togglePoolPanel);
+      togglePoolPanel();
+    }
+
+    var poolInput = document.getElementById("poolInput");
+    var poolCountEl = document.getElementById("poolCount");
+    var poolHelperEl = document.getElementById("poolCombinationHelper");
+    if (poolInput) {
+      poolInput.addEventListener("input", function() {
+        var nums = extractNumbersFromText(poolInput.value);
+        if (poolCountEl) poolCountEl.textContent = nums.length;
+        if (poolHelperEl) {
+          if (nums.length < 6) {
+            poolHelperEl.textContent = "6개 이상의 숫자를 입력해 주세요.";
+          } else {
+            var combs = combinations(nums.length, 6);
+            poolHelperEl.textContent = "현재 풀(Pool)에서 가능한 조합 중 추출 (총 " + combs.toLocaleString() + "개 중)";
+          }
+        }
+        updateFilterPreview();
+      });
+    }
+
+    var startQrBtn = document.getElementById("startQrBtn");
+    var stopQrBtn = document.getElementById("stopQrBtn");
+    var html5QrCode;
+    
+    if (startQrBtn && stopQrBtn) {
+      startQrBtn.addEventListener("click", function() {
+        if (typeof Html5Qrcode === "undefined") {
+          alert("QR 스캐너 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+          return;
+        }
+        html5QrCode = new Html5Qrcode("qrReader");
+        document.getElementById("qrReader").style.display = "block";
+        startQrBtn.style.display = "none";
+        stopQrBtn.style.display = "block";
+        
+        html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          function(decodedText, decodedResult) {
+            if (poolInput) {
+               poolInput.value = decodedText;
+               poolInput.dispatchEvent(new Event("input"));
+            }
+            html5QrCode.stop().then(function() {
+               document.getElementById("qrReader").style.display = "none";
+               startQrBtn.style.display = "block";
+               stopQrBtn.style.display = "none";
+            });
+          },
+          function(errorMessage) {
+            // ignore parsing errors on intermediate frames
+          }
+        ).catch(function(err) {
+          alert("카메라 시작에 실패했습니다. 권한을 확인해주세요.");
+          document.getElementById("qrReader").style.display = "none";
+          startQrBtn.style.display = "block";
+          stopQrBtn.style.display = "none";
+        });
+      });
+      
+      stopQrBtn.addEventListener("click", function() {
+        if (html5QrCode) {
+          html5QrCode.stop().then(function() {
+            document.getElementById("qrReader").style.display = "none";
+            startQrBtn.style.display = "block";
+            stopQrBtn.style.display = "none";
+          });
+        }
       });
     }
 

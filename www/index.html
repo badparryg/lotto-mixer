@@ -20,6 +20,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="icon" href="apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   </head>
   <body>
     <div class="backdrop backdrop-a"></div>
@@ -42,6 +43,7 @@
                   <option value="balanced">균형형</option>
                   <option value="trend">트렌드형</option>
                   <option value="contrarian">역발상형</option>
+                  <option value="pool_mix">QR 스캔 믹스형</option>
                 </select>
               </label>
 
@@ -62,6 +64,33 @@
                   <option value="40">최근 40회</option>
                 </select>
               </label>
+            </div>
+
+            <div id="poolPanel" class="filter-group number-board-group" style="display: none; padding-top: 0.5rem; border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 12px; background: rgba(0,0,0,0.15); margin-bottom: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.6rem;">
+                <h3 style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
+                  영수증 스캔 및 번호 추출
+                </h3>
+              </div>
+              <p style="margin-bottom: 0.8rem; font-size: 0.85rem; color: rgba(255,255,255,0.7);">카메라로 로또 용지 우측 상단 QR 코드를 스캔하세요. (직접 띄어쓰기로 숫자들을 적으셔도 됩니다.)</p>
+              
+              <div id="qrReader" style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 0.8rem; display: none; background: #000;"></div>
+              
+              <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+                <button type="button" id="startQrBtn" class="primary-button action-button" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; flex: 1;">
+                  📷 카메라 스캔
+                </button>
+                <button type="button" id="stopQrBtn" class="secondary-button" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; flex: 1; display: none;">
+                  스캔 중지
+                </button>
+              </div>
+
+              <div class="field" style="margin-bottom: 0;">
+                <span style="font-size: 0.85rem; margin-bottom: 6px; display: block;">누적 고유 번호 풀 (<strong id="poolCount" class="text-highlight">0</strong>개 추출됨)</span>
+                <textarea id="poolInput" rows="3" placeholder="예: 0861m041120213645m... 혹은 띄어쓰기로 여러 숫자 입력" style="width: 100%; resize: vertical; padding: 0.8rem; border-radius: 8px; font-family: 'SUIT', sans-serif; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 0.95rem; line-height: 1.5; outline: none; transition: border-color 0.2s ease;"></textarea>
+              </div>
+              
+              <p id="poolCombinationHelper" class="toolbar-feedback" style="margin-top: 0.8rem; font-weight: 500; min-height: 20px;">6개 이상의 숫자를 입력해 주세요.</p>
             </div>
 
             <details class="filter-group number-board-group">
