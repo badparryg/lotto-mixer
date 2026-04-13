@@ -477,10 +477,12 @@ details[open] .dropdown-chevron {
 
 .primary-button:disabled,
 .secondary-button:disabled {
-  cursor: wait;
-  opacity: 0.68;
-  transform: none;
-  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(100%);
+  transform: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
 }
 
 .microcopy,
