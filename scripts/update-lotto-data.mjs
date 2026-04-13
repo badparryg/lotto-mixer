@@ -79,18 +79,46 @@ export function parseLottoDrawPayload(payload) {
   });
 }
 
+export async function fetchRoundDataFromNaver(round, fetchImpl = globalThis.fetch) {
+  try {
+    const url = "https://m.search.naver.com/search.naver?query=" + encodeURIComponent(`로또 ${round}회 당첨번호`);
+    const res = await fetchImpl(url, { headers: { "User-Agent": "Mozilla/5.0" }, cache: "no-store" });
+    const html = await res.text();
+    
+    const headerMatch = html.match(new RegExp(`${round}회차\\s*\\((20\\d{2}\\.\\d{2}\\.\\d{2})\\.\\)`));
+    if (!headerMatch) return null;
+    
+    const date = headerMatch[1].replace(/\./g, "-");
+    const ballsMatch = [...html.matchAll(/class="ball type\d+">(\d+)<\/span>/g)];
+    
+    if (!ballsMatch || ballsMatch.length < 7) return null;
+    
+    const numbers = ballsMatch.slice(0, 6).map(m => parseInt(m[1], 10));
+    const bonus = parseInt(ballsMatch[6][1], 10);
+    
+    return normalizeDraw({ round, date, numbers, bonus });
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchRoundData(round, fetchImpl = globalThis.fetch) {
   if (typeof fetchImpl !== "function") {
     return null;
   }
 
+  let result = null;
   try {
     const response = await fetchImpl(LOTTO_API_URL + round, { cache: "no-store" });
     const text = await response.text();
-    return parseLottoDrawPayload(JSON.parse(text));
-  } catch {
-    return null;
+    result = parseLottoDrawPayload(JSON.parse(text));
+  } catch {}
+  
+  if (!result) {
+    result = await fetchRoundDataFromNaver(round, fetchImpl);
   }
+  
+  return result;
 }
 
 function loadWindowAssignment(scriptText, key) {
