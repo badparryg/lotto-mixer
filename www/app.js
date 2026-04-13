@@ -696,7 +696,12 @@
       var numbers = generateOneTicket(currentScoreMap, stats, currentProfile, rng, filterState);
       var key = numbers.join("-");
 
-      if (seen.has(key) || !validateTicket(numbers, stats, currentProfile, filterState)) {
+      if (seen.has(key)) {
+        continue;
+      }
+      
+      var isStrict = profile === "pool_mix" ? (attempts < maxAttempts * 0.3) : (attempts < maxAttempts * 0.8);
+      if (isStrict && !validateTicket(numbers, stats, currentProfile, filterState)) {
         continue;
       }
 
