@@ -5,8 +5,8 @@ window.LOTTO_LATEST_OVERRIDE = {
   // date: "2026-03-28",
   // numbers: [1, 2, 3, 4, 5, 6],
   // bonus: 7,
-  round: 1218,
-  date: "2026-04-04",
-  numbers: [3, 28, 31, 32, 42, 45],
-  bonus: 25,
+  round: 1219,
+  date: "2026-04-11",
+  numbers: [1, 2, 15, 28, 39, 45],
+  bonus: 31,
 };
