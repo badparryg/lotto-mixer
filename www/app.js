@@ -31,6 +31,7 @@
     activeTicketIndex: -1,
     isSyncing: false,
     filterStateMap: {},
+    poolNumberSet: new Set(),
   };
 
   function createRng(seed) {
@@ -199,6 +200,30 @@
     });
     
     return Array.from(new Set(numbers)).filter(function(n) { return n >= 1 && n <= 45; }).sort(function(a,b){return a-b;});
+  }
+
+  function extractGamesFromText(text) {
+    var rawText = text || "";
+    var games = [];
+    var qrMatch = rawText.match(/v=([a-zA-Z0-9]+)/);
+    
+    if (qrMatch) {
+      var data = qrMatch[1];
+      var body = data.substring(4);
+      var parts = body.split(/[A-Za-z]/);
+      parts.forEach(function(part) {
+        if (part.length === 12) {
+          var gameNums = [];
+          for (var i = 0; i < 12; i += 2) {
+            gameNums.push(parseInt(part.substring(i, i+2), 10));
+          }
+          if (new Set(gameNums).size === 6) {
+            games.push(gameNums.sort(function(a,b) { return a - b; }));
+          }
+        }
+      });
+    }
+    return games;
   }
 
   function escapeHtml(value) {
@@ -759,7 +784,6 @@
     var profileEl = document.getElementById("profile");
     var countEl = document.getElementById("ticketCount");
     var windowEl = document.getElementById("recentWindow");
-    var poolInput = document.getElementById("poolInput");
 
     return {
       profile: profileEl ? profileEl.value : "balanced",
@@ -767,7 +791,7 @@
       recentWindow: windowEl ? windowEl.value : "24",
       includedNumbers: includedNumbers,
       excludedNumbers: excludedNumbers,
-      poolNumbers: poolInput ? extractNumbersFromText(poolInput.value) : []
+      poolNumbers: Array.from(appState.poolNumberSet).sort(function(a,b){return a-b;})
     };
   }
 
@@ -1419,24 +1443,54 @@
       togglePoolPanel();
     }
 
-    var poolInput = document.getElementById("poolInput");
+    var poolGridTarget = document.getElementById("poolNumberGrid");
     var poolCountEl = document.getElementById("poolCount");
     var poolHelperEl = document.getElementById("poolCombinationHelper");
-    if (poolInput) {
-      poolInput.addEventListener("input", function() {
-        var nums = extractNumbersFromText(poolInput.value);
-        if (poolCountEl) poolCountEl.textContent = nums.length;
-        if (poolHelperEl) {
-          if (nums.length < 6) {
-            poolHelperEl.textContent = "6개 이상의 숫자를 입력해 주세요.";
-          } else {
-            var combs = combinations(nums.length, 6);
-            poolHelperEl.textContent = "현재 풀(Pool)에서 가능한 조합 중 추출 (총 " + combs.toLocaleString() + "개 중)";
-          }
+    var resetPoolBtn = document.getElementById("resetPoolBtn");
+    
+    function renderPoolGrid() {
+      if (!poolGridTarget) return;
+      poolGridTarget.innerHTML = NUMBER_RANGE.map(function(number) {
+        var isSelected = appState.poolNumberSet.has(number);
+        var boxClass = isSelected ? "number-pick-box pick-include" : "number-pick-box";
+        return '<div class="number-pick"><button type="button" class="' + boxClass + '" data-num="' + number + '">' + number + '</button></div>';
+      }).join("");
+      
+      var size = appState.poolNumberSet.size;
+      if (poolCountEl) poolCountEl.textContent = size;
+      if (poolHelperEl) {
+        if (size < 6) {
+          poolHelperEl.textContent = "6개 이상의 숫자를 입력해 주세요.";
+        } else {
+          var combs = combinations(size, 6);
+          poolHelperEl.textContent = "총 " + combs.toLocaleString() + "개의 조합 중 추출됩니다.";
         }
-        updateFilterPreview();
+      }
+    }
+
+    if (resetPoolBtn) {
+      resetPoolBtn.addEventListener("click", function() {
+        appState.poolNumberSet.clear();
+        document.getElementById("scannedGamesPreview").innerHTML = "";
+        renderPoolGrid();
       });
     }
+
+    if (poolGridTarget) {
+      poolGridTarget.addEventListener("click", function(event) {
+        var btn = event.target.closest("button[data-num]");
+        if (!btn) return;
+        var num = parseInt(btn.getAttribute("data-num"), 10);
+        if (appState.poolNumberSet.has(num)) {
+          appState.poolNumberSet.delete(num);
+        } else {
+          appState.poolNumberSet.add(num);
+        }
+        renderPoolGrid();
+      });
+    }
+
+    renderPoolGrid();
 
     var startQrBtn = document.getElementById("startQrBtn");
     var stopQrBtn = document.getElementById("stopQrBtn");
@@ -1457,9 +1511,23 @@
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           function(decodedText, decodedResult) {
-            if (poolInput) {
-               poolInput.value = decodedText;
-               poolInput.dispatchEvent(new Event("input"));
+            var games = extractGamesFromText(decodedText);
+            if (games.length > 0) {
+               games.forEach(function(game) {
+                 game.forEach(function(n) { appState.poolNumberSet.add(n); });
+               });
+               
+               var previewHtml = games.map(function(game, index) {
+                 var letter = String.fromCharCode(65 + index);
+                 return '<div style="display: flex; align-items: center; gap: 8px;">' +
+                   '<span style="font-weight: 700; width: 14px;">' + letter + '</span>' +
+                   '<div class="ticket-balls" style="font-size: 0.8em; margin: 0;">' + 
+                   game.map(function(n){ return ballMarkup(n); }).join("") +
+                   '</div></div>';
+               }).join("");
+               
+               document.getElementById("scannedGamesPreview").innerHTML = previewHtml;
+               renderPoolGrid();
             }
             html5QrCode.stop().then(function() {
                document.getElementById("qrReader").style.display = "none";

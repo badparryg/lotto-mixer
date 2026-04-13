@@ -85,9 +85,17 @@
                 </button>
               </div>
 
+              <div id="scannedGamesPreview" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 8px;"></div>
+
               <div class="field" style="margin-bottom: 0;">
-                <span style="font-size: 0.85rem; margin-bottom: 6px; display: block;">누적 고유 번호 풀 (<strong id="poolCount" class="text-highlight">0</strong>개 추출됨)</span>
-                <textarea id="poolInput" rows="3" placeholder="예: 0861m041120213645m... 혹은 띄어쓰기로 여러 숫자 입력" style="width: 100%; resize: vertical; padding: 0.8rem; border-radius: 8px; font-family: 'SUIT', sans-serif; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 0.95rem; line-height: 1.5; outline: none; transition: border-color 0.2s ease;"></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                  <span style="font-size: 0.85rem; display: block;">누적 고유 번호 풀 (<strong id="poolCount" class="text-highlight">0</strong>개 선택됨)</span>
+                  <button type="button" id="resetPoolBtn" class="reset-button" title="모든 풀 번호 초기화" onclick="event.preventDefault(); event.stopPropagation();">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"></path></svg>
+                    초기화
+                  </button>
+                </div>
+                <div id="poolNumberGrid" class="number-board haptic-grid"></div>
               </div>
               
               <p id="poolCombinationHelper" class="toolbar-feedback" style="margin-top: 0.8rem; font-weight: 500; min-height: 20px;">6개 이상의 숫자를 입력해 주세요.</p>
