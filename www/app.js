@@ -1452,7 +1452,7 @@
       if (!poolGridTarget) return;
       poolGridTarget.innerHTML = NUMBER_RANGE.map(function(number) {
         var isSelected = appState.poolNumberSet.has(number);
-        var boxClass = isSelected ? "number-pick-box pick-include" : "number-pick-box";
+        var boxClass = isSelected ? "number-pick-box is-include" : "number-pick-box";
         return '<div class="number-pick"><button type="button" class="' + boxClass + '" data-num="' + number + '">' + number + '</button></div>';
       }).join("");
       
