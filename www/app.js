@@ -1201,8 +1201,9 @@
     if (options && options.profile === "pool_mix") {
       var size = appState.poolNumberSet.size;
       var combs = combinations(size, 6);
-      if (size < 6 || combs < options.count) {
-        alert("풀에 선택된 번호가 부족하여 " + options.count + "개의 세트를 생성할 수 없습니다.");
+      var currentTicketCount = (options && options.ticketCount) ? parseInt(options.ticketCount, 10) : 5;
+      if (size < 6 || combs < currentTicketCount) {
+        alert("풀에 선택된 번호가 부족하여 " + currentTicketCount + "개의 세트를 생성할 수 없습니다.");
         return appState.latestResult || null;
       }
     }
