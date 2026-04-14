@@ -919,8 +919,8 @@
       ballMarkup(result.stats.latest.bonus) +
       '</div></article>' +
       '<article class="hero-stat"><span class="hero-stat-label" style="display:inline-flex;align-items:center;gap:0.3rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 추세 분석 데이터 범위</span><span class="hero-stat-value" style="color:var(--mint);font-size:1.1rem;">로컬 데이터 베이스 가동 중</span><div style="margin-top:0.45rem;line-height:1.6;font-size:0.92rem;color:var(--muted);"><strong style="color:var(--text);font-weight:700;">' +
-      result.stats.rounds +
-      '</strong>회차 전체 이력 기반<br><strong style="color:var(--text);font-weight:700;">' +
+      result.stats.latestRound +
+      '</strong>회차까지의 누적 데이터 기반<br><strong style="color:var(--text);font-weight:700;">' +
       result.recentWindow +
       '</strong>회차 핫&콜드 구간 가중치 반영</div></article>' +
       '<article class="hero-stat"><span class="hero-stat-label" style="display:inline-flex;align-items:center;gap:0.3rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> 주요 주목 (예상) 번호</span><span class="hero-stat-value" style="color:var(--accent);font-size:1.1rem;">시그널 감지 렌즈 동작</span><div style="margin-top:0.6rem;display:flex;gap:0.4rem;align-items:center;">' +
