@@ -235,7 +235,10 @@
           </div>
           <div class="ticket-check-modal__controls">
             <button type="button" id="ticketCheckStartBtn" class="primary-button action-button">
-              📷 카메라 열기
+              📷 카메라 스캔
+            </button>
+            <button type="button" id="ticketCheckUploadBtn" class="secondary-button action-button">
+              이미지 업로드
             </button>
             <button type="button" id="ticketCheckStopBtn" class="secondary-button action-button" hidden>
               스캔 중지
@@ -243,9 +246,10 @@
           </div>
         </div>
 
+        <input type="file" id="ticketCheckFileInput" accept="image/*" hidden />
         <div id="ticketCheckQrReader" class="ticket-check-qr-reader" hidden></div>
         <p id="ticketCheckModalFeedback" class="toolbar-feedback ticket-check-modal__feedback" aria-live="polite">
-          버튼을 누르거나 모달을 열면 카메라가 켜지고, QR 인식 후 결과표가 아래에 나타납니다.
+          카메라 스캔 또는 이미지 업로드 중 원하는 방법으로 QR 코드를 확인해 주세요.
         </p>
 
         <section id="ticketCheckResults" class="ticket-check-results" hidden>

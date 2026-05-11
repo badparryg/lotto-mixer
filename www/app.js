@@ -1857,7 +1857,9 @@
     var openTicketCheckModalBtn = document.getElementById("openTicketCheckModalBtn");
     var closeTicketCheckModalBtn = document.getElementById("closeTicketCheckModalBtn");
     var ticketCheckStartBtn = document.getElementById("ticketCheckStartBtn");
+    var ticketCheckUploadBtn = document.getElementById("ticketCheckUploadBtn");
     var ticketCheckStopBtn = document.getElementById("ticketCheckStopBtn");
+    var ticketCheckFileInput = document.getElementById("ticketCheckFileInput");
     var ticketCheckQrReader = document.getElementById("ticketCheckQrReader");
     var ticketCheckModalFeedback = document.getElementById("ticketCheckModalFeedback");
 
@@ -1950,10 +1952,7 @@
       ticketCheckModal.hidden = false;
       ticketCheckModal.setAttribute("aria-hidden", "false");
       document.body.classList.add("ticket-check-modal-open");
-      setTicketCheckModalFeedback("카메라를 준비 중입니다. QR 코드를 화면 중앙에 맞춰 주세요.", "info");
-      setTimeout(function () {
-        startTicketCheckScan();
-      }, 80);
+      setTicketCheckModalFeedback("카메라가 안 되는 PC/인앱 브라우저에서는 이미지 업로드로도 확인할 수 있습니다.", "info");
     }
 
     function closeTicketCheckModal() {
@@ -1986,18 +1985,7 @@
             { facingMode: "environment" },
             { fps: 10, qrbox: { width: 260, height: 260 } },
             function (decodedText) {
-              var ticketInfo = extractTicketInfoFromText(decodedText);
-
-              if (ticketInfo.games.length) {
-                renderScannedTicketResults(ticketInfo);
-                setTicketCheckModalFeedback(
-                  (ticketInfo.round ? ticketInfo.round + "회" : "스캔한 용지") + " 결과를 정리했습니다. 아래 표에서 줄별 매칭을 확인해 보세요.",
-                  "success",
-                );
-              } else {
-                clearScannedTicketResults();
-                setTicketCheckModalFeedback("QR은 읽었지만 로또 게임 정보를 찾지 못했습니다. 다른 각도로 다시 스캔해 주세요.", "error");
-              }
+              applyTicketCheckDecodedText(decodedText, "카메라");
 
               stopTicketCheckQrScan();
             },
@@ -2006,10 +1994,64 @@
             },
           )
           .catch(function () {
-            setTicketCheckModalFeedback("카메라 시작에 실패했습니다. 브라우저 권한과 카메라 연결 상태를 확인해 주세요.", "error");
+            setTicketCheckModalFeedback("카메라 시작에 실패했습니다. 브라우저 권한을 확인하거나 이미지 업로드로 QR 사진을 확인해 주세요.", "error");
             stopTicketCheckQrScan();
           });
       });
+    }
+
+    function applyTicketCheckDecodedText(decodedText, sourceLabel) {
+      var ticketInfo = extractTicketInfoFromText(decodedText);
+
+      if (ticketInfo.games.length) {
+        renderScannedTicketResults(ticketInfo);
+        setTicketCheckModalFeedback(
+          (sourceLabel || "QR") +
+            "에서 " +
+            (ticketInfo.round ? ticketInfo.round + "회" : "용지 정보") +
+            "를 읽었습니다. 아래 결과표를 확인해 보세요.",
+          "success",
+        );
+      } else {
+        clearScannedTicketResults();
+        setTicketCheckModalFeedback("QR은 읽었지만 로또 게임 정보를 찾지 못했습니다. 다른 사진이나 각도로 다시 시도해 주세요.", "error");
+      }
+    }
+
+    function handleTicketCheckFileUpload(file) {
+      var fileScanner;
+
+      if (!file || typeof Html5Qrcode === "undefined") {
+        return Promise.resolve();
+      }
+
+      if (ticketCheckQrReader) {
+        ticketCheckQrReader.hidden = true;
+      }
+      if (ticketCheckStartBtn) {
+        ticketCheckStartBtn.hidden = false;
+      }
+      if (ticketCheckStopBtn) {
+        ticketCheckStopBtn.hidden = true;
+      }
+
+      setTicketCheckModalFeedback("이미지에서 QR 코드를 분석하고 있습니다.", "info");
+      fileScanner = new Html5Qrcode("ticketCheckQrReader");
+
+      return fileScanner
+        .scanFile(file, true)
+        .then(function (decodedText) {
+          applyTicketCheckDecodedText(decodedText, "업로드한 이미지");
+          return fileScanner.clear().catch(function () {
+            return null;
+          });
+        })
+        .catch(function () {
+          setTicketCheckModalFeedback("이미지에서 QR 코드를 찾지 못했습니다. 더 선명한 사진으로 다시 시도해 주세요.", "error");
+          return fileScanner.clear().catch(function () {
+            return null;
+          });
+        });
     }
 
     if (openTicketCheckModalBtn) {
@@ -2030,6 +2072,26 @@
 
     if (ticketCheckStartBtn) {
       ticketCheckStartBtn.addEventListener("click", startTicketCheckScan);
+    }
+
+    if (ticketCheckUploadBtn && ticketCheckFileInput) {
+      ticketCheckUploadBtn.addEventListener("click", function () {
+        ticketCheckFileInput.click();
+      });
+
+      ticketCheckFileInput.addEventListener("change", function (event) {
+        var file = event.target && event.target.files ? event.target.files[0] : null;
+
+        if (!file) {
+          return;
+        }
+
+        stopTicketCheckQrScan().then(function () {
+          handleTicketCheckFileUpload(file);
+        });
+
+        ticketCheckFileInput.value = "";
+      });
     }
 
     if (ticketCheckStopBtn) {

@@ -170,6 +170,7 @@ assert.match(html, /unifiedNumberGrid/, "index should render the unified filter 
 assert.match(html, /poolNumberGrid/, "index should render the pool mix board");
 assert.match(html, /ticketCheckModal/, "index should render the dedicated ticket check modal");
 assert.match(html, /openTicketCheckModalBtn/, "index should render the bottom ticket check launch button");
+assert.match(html, /ticketCheckUploadBtn/, "index should expose the desktop upload fallback");
 assert.match(html, /ticketCheckRows/, "index should render the ticket result rows container");
 assert.doesNotMatch(html, /ticketCheckQuickButton/, "header quick button should be removed");
 assert.doesNotMatch(html, /QR 스캔 믹스형 \+ 당첨확인/, "pool mix profile should no longer include ticket checking");
@@ -179,6 +180,8 @@ assert.match(appSource, /historySyncButton/, "app should render the manual updat
 assert.match(appSource, /renderScannedTicketResults/, "app should render scanned ticket result summaries");
 assert.match(appSource, /openTicketCheckModalBtn/, "app should wire the modal launch button");
 assert.match(appSource, /ticketCheckModal/, "app should manage the dedicated ticket check modal");
+assert.match(appSource, /scanFile\(file, true\)/, "app should support scanning uploaded QR images");
+assert.doesNotMatch(appSource, /setTimeout\(function \(\) \{\s*startTicketCheckScan\(\);/s, "modal should not auto-start camera on open");
 assert.match(healthHtml, /"status":"ok"/, "health endpoint should advertise an ok status");
 
 console.log("Regression OK:", {
