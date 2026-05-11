@@ -505,6 +505,134 @@ details[open] .dropdown-chevron {
   line-height: 1.5;
 }
 
+.ticket-check-panel {
+  margin-bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(155deg, rgba(95, 184, 255, 0.12), transparent 45%),
+    rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(95, 184, 255, 0.16);
+}
+
+.ticket-check-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.ticket-check-head h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ticket-check-badge,
+.ticket-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.ticket-check-badge.is-ready,
+.ticket-rank-badge.is-rank {
+  background: rgba(116, 242, 206, 0.16);
+  color: var(--mint);
+  border: 1px solid rgba(116, 242, 206, 0.3);
+}
+
+.ticket-check-badge.is-pending,
+.ticket-rank-badge.is-pending {
+  background: rgba(255, 209, 102, 0.16);
+  color: var(--accent);
+  border: 1px solid rgba(255, 209, 102, 0.3);
+}
+
+.ticket-check-badge.is-error,
+.ticket-rank-badge.is-miss {
+  background: rgba(255, 122, 112, 0.12);
+  color: #ffd0cb;
+  border: 1px solid rgba(255, 122, 112, 0.22);
+}
+
+.ticket-rank-badge.is-jackpot {
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.2), rgba(255, 138, 61, 0.2));
+  color: var(--accent);
+  border: 1px solid rgba(255, 209, 102, 0.38);
+}
+
+.ticket-check-summary {
+  margin: 0.8rem 0 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.ticket-check-draw {
+  margin-top: 0.8rem;
+}
+
+.ticket-check-draw-card,
+.ticket-check-item {
+  border-radius: 16px;
+  background: rgba(7, 16, 29, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.85rem;
+}
+
+.ticket-check-draw-card {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ticket-check-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ticket-check-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+}
+
+.ticket-check-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.ticket-check-item-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ticket-check-item-title strong {
+  font-size: 0.95rem;
+}
+
+.ticket-check-item-copy {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.ticket-check-match {
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
 .reset-button {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);

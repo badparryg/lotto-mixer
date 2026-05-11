@@ -131,6 +131,26 @@ filtered.tickets.forEach((ticket, index) => {
   assert.ok(ticket.numbers.includes(17), `filtered ticket ${index + 1} should include fixed number 17`);
 });
 
+const scannedTicket = app.extractTicketInfoFromText("https://m.dhlottery.co.kr/?v=1223q161820323339w010203040506");
+assert.equal(scannedTicket.round, 1223, "QR parser should extract the round from the ticket");
+assert.equal(scannedTicket.games.length, 2, "QR parser should extract all encoded games");
+assert.deepEqual(
+  Array.from(scannedTicket.games[0]),
+  [16, 18, 20, 32, 33, 39],
+  "QR parser should decode six-number games",
+);
+
+const evaluatedTicket = app.evaluateScannedTicket(scannedTicket, history);
+assert.equal(evaluatedTicket.status, "ready", "known rounds should evaluate immediately");
+assert.equal(evaluatedTicket.games[0].rank.label, "1등", "perfect matches should be recognized as first prize");
+assert.equal(evaluatedTicket.games[1].rank.label, "미당첨", "non-winning games should be marked as misses");
+
+const pendingTicket = app.evaluateScannedTicket(
+  { round: history.at(-1).round + 1, games: [[1, 2, 3, 4, 5, 6]] },
+  history,
+);
+assert.equal(pendingTicket.status, "pending", "future rounds should stay pending");
+
 const html = fs.readFileSync(path.join(webRoot, "index.html"), "utf8");
 const healthHtml = fs.readFileSync(path.join(webRoot, "health/index.html"), "utf8");
 assert.match(html, /data\/lotto-history\.js/, "index should load bundled history data");
@@ -138,9 +158,11 @@ assert.match(html, /data\/latest-draw\.js/, "index should load latest draw overr
 assert.match(html, /app\.js/, "index should load app.js");
 assert.match(html, /unifiedNumberGrid/, "index should render the unified filter board");
 assert.match(html, /poolNumberGrid/, "index should render the pool mix board");
+assert.match(html, /ticketCheckPanel/, "index should render the scanned ticket check panel");
 assert.match(html, /historySyncStatus/, "index should render history sync status");
 assert.match(html, /resultsFeedback/, "index should render generation feedback");
 assert.match(appSource, /historySyncButton/, "app should render the manual update button");
+assert.match(appSource, /renderScannedTicketResults/, "app should render scanned ticket result summaries");
 assert.match(healthHtml, /"status":"ok"/, "health endpoint should advertise an ok status");
 
 console.log("Regression OK:", {

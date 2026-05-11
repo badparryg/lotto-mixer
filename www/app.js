@@ -32,6 +32,7 @@
     isSyncing: false,
     filterStateMap: {},
     poolNumberSet: new Set(),
+    lastScannedTicketInfo: null,
   };
 
   function createRng(seed) {
@@ -180,20 +181,13 @@
   function extractNumbersFromText(text) {
     var rawText = text || "";
     var numbers = [];
-    var qrMatch = rawText.match(/v=([a-zA-Z0-9]+)/);
-    
-    if (qrMatch) {
-      var data = qrMatch[1];
-      var body = data.substring(4);
-      var parts = body.split(/[A-Za-z]/);
-      parts.forEach(function(part) {
-        if (part.length === 12) {
-          for (var i = 0; i < 12; i += 2) {
-            numbers.push(parseInt(part.substring(i, i+2), 10));
-          }
-        }
+    var ticketInfo = extractTicketInfoFromText(rawText);
+
+    ticketInfo.games.forEach(function (game) {
+      game.forEach(function (number) {
+        numbers.push(number);
       });
-    }
+    });
     var tokens = rawText.match(/\b([1-9]|[1-3][0-9]|4[0-5])\b/g) || [];
     tokens.forEach(function(t) {
       numbers.push(parseInt(t, 10));
@@ -204,13 +198,23 @@
 
   function extractGamesFromText(text) {
     var rawText = text || "";
+    return extractTicketInfoFromText(rawText).games;
+  }
+
+  function extractTicketInfoFromText(text) {
+    var rawText = text || "";
     var games = [];
     var qrMatch = rawText.match(/v=([a-zA-Z0-9]+)/);
+    var round = null;
     
     if (qrMatch) {
       var data = qrMatch[1];
+      var roundToken = data.substring(0, 4);
       var body = data.substring(4);
       var parts = body.split(/[A-Za-z]/);
+      if (/^\d{4}$/.test(roundToken)) {
+        round = parseInt(roundToken, 10);
+      }
       parts.forEach(function(part) {
         if (part.length === 12) {
           var gameNums = [];
@@ -223,7 +227,237 @@
         }
       });
     }
-    return games;
+    return {
+      round: round,
+      games: games,
+      numbers: Array.from(new Set([].concat.apply([], games))).sort(function (left, right) {
+        return left - right;
+      }),
+    };
+  }
+
+  function getRankMeta(matchCount, bonusMatch) {
+    if (matchCount === 6) {
+      return { rank: 1, label: "1등", tone: "jackpot", summary: "번호 6개 일치" };
+    }
+    if (matchCount === 5 && bonusMatch) {
+      return { rank: 2, label: "2등", tone: "jackpot", summary: "번호 5개 + 보너스 일치" };
+    }
+    if (matchCount === 5) {
+      return { rank: 3, label: "3등", tone: "rank", summary: "번호 5개 일치" };
+    }
+    if (matchCount === 4) {
+      return { rank: 4, label: "4등", tone: "rank", summary: "번호 4개 일치" };
+    }
+    if (matchCount === 3) {
+      return { rank: 5, label: "5등", tone: "rank", summary: "번호 3개 일치" };
+    }
+    return { rank: null, label: "미당첨", tone: "miss", summary: "당첨 조건 미달" };
+  }
+
+  function evaluateScannedTicket(ticketInfo, history) {
+    var scanned = ticketInfo || { round: null, games: [] };
+    var games = Array.isArray(scanned.games) ? scanned.games.slice() : [];
+    var activeHistory = Array.isArray(history) ? history.slice() : [];
+    var latest = activeHistory.length ? activeHistory[activeHistory.length - 1] : null;
+    var targetRound = Number(scanned.round) || null;
+    var draw = targetRound
+      ? activeHistory.find(function (item) {
+          return item.round === targetRound;
+        }) || null
+      : null;
+    var result = {
+      round: targetRound,
+      draw: draw,
+      latestRound: latest ? latest.round : null,
+      latestDate: latest ? latest.date : null,
+      status: "empty",
+      summary: "QR을 스캔하면 회차와 게임별 당첨 여부가 여기에 표시됩니다.",
+      games: [],
+    };
+
+    if (!games.length) {
+      return result;
+    }
+
+    if (!targetRound) {
+      result.status = "unknown";
+      result.summary = "게임 번호는 읽었지만 QR에서 회차를 인식하지 못했습니다. 당첨 확인은 회차 인식이 가능한 QR에서 자동으로 계산됩니다.";
+      result.games = games.map(function (numbers, index) {
+        return {
+          index: index,
+          letter: String.fromCharCode(65 + index),
+          numbers: numbers.slice(),
+          rank: { label: "회차 인식 실패", tone: "pending", summary: "게임 번호만 추출됨" },
+          matchedNumbers: [],
+          bonusMatch: false,
+          matchCount: 0,
+          isWinner: false,
+        };
+      });
+      return result;
+    }
+
+    if (!draw) {
+      result.status = "pending";
+      result.summary =
+        latest && targetRound > latest.round
+          ? targetRound + "회는 아직 추첨 전입니다. 추첨 후 최신 회차를 동기화하면 자동으로 다시 판정됩니다."
+          : targetRound + "회 데이터를 아직 로컬에서 찾지 못했습니다. 최신 회차 동기화 후 다시 확인해 주세요.";
+      result.games = games.map(function (numbers, index) {
+        return {
+          index: index,
+          letter: String.fromCharCode(65 + index),
+          numbers: numbers.slice(),
+          rank: { label: "판정 대기", tone: "pending", summary: "추첨 결과 대기" },
+          matchedNumbers: [],
+          bonusMatch: false,
+          matchCount: 0,
+          isWinner: false,
+        };
+      });
+      return result;
+    }
+
+    result.status = "ready";
+    result.games = games.map(function (numbers, index) {
+      var matchedNumbers = numbers.filter(function (number) {
+        return draw.numbers.includes(number);
+      });
+      var bonusMatch = numbers.includes(draw.bonus);
+      var rank = getRankMeta(matchedNumbers.length, bonusMatch);
+
+      return {
+        index: index,
+        letter: String.fromCharCode(65 + index),
+        numbers: numbers.slice(),
+        matchedNumbers: matchedNumbers,
+        bonusMatch: bonusMatch,
+        matchCount: matchedNumbers.length,
+        rank: rank,
+        isWinner: rank.rank !== null,
+      };
+    });
+
+    var winners = result.games.filter(function (game) {
+      return game.isWinner;
+    });
+    var winnerSummary = winners.length
+      ? winners
+          .map(function (game) {
+            return game.letter + " " + game.rank.label;
+          })
+          .join(" / ")
+      : "당첨 게임 없음";
+
+    result.summary =
+      draw.round +
+      "회 (" +
+      draw.date +
+      ") 기준으로 확인했습니다. " +
+      winnerSummary +
+      ".";
+
+    return result;
+  }
+
+  function clearScannedTicketResults() {
+    var panel = document.getElementById("ticketCheckPanel");
+    var drawTarget = document.getElementById("ticketCheckDraw");
+    var listTarget = document.getElementById("ticketCheckList");
+    var summaryTarget = document.getElementById("ticketCheckSummary");
+    var titleTarget = document.getElementById("ticketCheckTitle");
+    var badgeTarget = document.getElementById("ticketCheckStatusBadge");
+
+    appState.lastScannedTicketInfo = null;
+
+    if (panel) panel.hidden = true;
+    if (drawTarget) drawTarget.innerHTML = "";
+    if (listTarget) listTarget.innerHTML = "";
+    if (summaryTarget) summaryTarget.textContent = "QR을 스캔하면 회차와 게임별 당첨 여부가 여기에 표시됩니다.";
+    if (titleTarget) titleTarget.textContent = "스캔 당첨 확인";
+    if (badgeTarget) {
+      badgeTarget.textContent = "대기";
+      badgeTarget.className = "ticket-check-badge";
+    }
+  }
+
+  function renderScannedTicketResults(ticketInfo) {
+    var panel = document.getElementById("ticketCheckPanel");
+    var drawTarget = document.getElementById("ticketCheckDraw");
+    var listTarget = document.getElementById("ticketCheckList");
+    var summaryTarget = document.getElementById("ticketCheckSummary");
+    var titleTarget = document.getElementById("ticketCheckTitle");
+    var badgeTarget = document.getElementById("ticketCheckStatusBadge");
+    var evaluation;
+    var badgeClassMap = {
+      ready: "is-ready",
+      pending: "is-pending",
+      unknown: "is-pending",
+      empty: "is-error",
+    };
+    var badgeCopyMap = {
+      ready: "판정 완료",
+      pending: "결과 대기",
+      unknown: "회차 확인 필요",
+      empty: "대기",
+    };
+
+    if (!panel || !drawTarget || !listTarget || !summaryTarget || !titleTarget || !badgeTarget) {
+      return;
+    }
+
+    if (!ticketInfo || !ticketInfo.games || !ticketInfo.games.length) {
+      clearScannedTicketResults();
+      return;
+    }
+
+    appState.lastScannedTicketInfo = ticketInfo;
+    evaluation = evaluateScannedTicket(ticketInfo, getActiveHistory());
+
+    panel.hidden = false;
+    titleTarget.textContent = evaluation.round ? evaluation.round + "회 용지 판정" : "스캔 당첨 확인";
+    summaryTarget.textContent = evaluation.summary;
+    badgeTarget.textContent = badgeCopyMap[evaluation.status] || "대기";
+    badgeTarget.className = "ticket-check-badge " + (badgeClassMap[evaluation.status] || "is-error");
+
+    if (evaluation.draw) {
+      drawTarget.innerHTML =
+        '<div class="ticket-check-draw-card">' +
+        '<div class="ticket-check-label">기준 당첨 번호</div>' +
+        '<div class="ticket-balls" style="margin:0;">' +
+        evaluation.draw.numbers.map(function (number) { return ballMarkup(number); }).join("") +
+        ballMarkup(evaluation.draw.bonus) +
+        "</div>" +
+        '<div class="ticket-check-match">보너스 번호는 마지막 공입니다. 스캔 용지는 ' + evaluation.draw.round + "회 / " + escapeHtml(evaluation.draw.date) + " 기준으로 비교했습니다.</div>" +
+        "</div>";
+    } else {
+      drawTarget.innerHTML = "";
+    }
+
+    listTarget.innerHTML = evaluation.games
+      .map(function (game) {
+        var matchedCopy = game.matchedNumbers.length
+          ? "일치 번호 " + game.matchedNumbers.join(", ") + (game.bonusMatch ? " / 보너스 일치" : "")
+          : game.rank.tone === "pending"
+            ? game.rank.summary
+            : "일치 번호 없음";
+
+        return (
+          '<article class="ticket-check-item">' +
+          '<div class="ticket-check-item-head">' +
+          '<div class="ticket-check-item-title">' +
+          "<strong>" + game.letter + " 게임</strong>" +
+          '<span class="ticket-check-item-copy">' + game.numbers.map(function (number) { return number + "번"; }).join(", ") + "</span>" +
+          "</div>" +
+          '<span class="ticket-rank-badge is-' + game.rank.tone + '">' + game.rank.label + "</span>" +
+          "</div>" +
+          '<div class="ticket-balls" style="margin-top:0.7rem;">' + game.numbers.map(function (number) { return ballMarkup(number); }).join("") + "</div>" +
+          '<div class="ticket-check-match">' + game.rank.summary + " · " + matchedCopy + "</div>" +
+          "</article>"
+        );
+      })
+      .join("");
   }
 
   function escapeHtml(value) {
@@ -1367,6 +1601,10 @@
         }
       }
 
+      if (appState.lastScannedTicketInfo) {
+        renderScannedTicketResults(appState.lastScannedTicketInfo);
+      }
+
       return syncedRounds;
     });
   }
@@ -1517,6 +1755,7 @@
       resetPoolBtn.addEventListener("click", function() {
         appState.poolNumberSet.clear();
         document.getElementById("scannedGamesPreview").innerHTML = "";
+        clearScannedTicketResults();
         renderPoolGrid();
       });
     }
@@ -1556,7 +1795,8 @@
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           function(decodedText, decodedResult) {
-            var games = extractGamesFromText(decodedText);
+            var ticketInfo = extractTicketInfoFromText(decodedText);
+            var games = ticketInfo.games;
             if (games.length > 0) {
                games.forEach(function(game) {
                  game.forEach(function(n) { appState.poolNumberSet.add(n); });
@@ -1572,7 +1812,10 @@
                }).join("");
                
                document.getElementById("scannedGamesPreview").innerHTML = previewHtml;
+               renderScannedTicketResults(ticketInfo);
                renderPoolGrid();
+            } else {
+               clearScannedTicketResults();
             }
             html5QrCode.stop().then(function() {
                document.getElementById("qrReader").style.display = "none";
@@ -1665,6 +1908,8 @@
     mergeLatestOverride: mergeLatestOverride,
     normalizeDraw: normalizeDraw,
     parseLottoDrawPayload: parseLottoDrawPayload,
+    extractTicketInfoFromText: extractTicketInfoFromText,
+    evaluateScannedTicket: evaluateScannedTicket,
     syncLatestHistory: syncLatestHistory,
     validateTicket: validateTicket,
     runApp: runApp,

@@ -43,7 +43,7 @@
                   <option value="balanced">균형형</option>
                   <option value="trend">트렌드형</option>
                   <option value="contrarian">역발상형</option>
-                  <option value="pool_mix">QR 스캔 믹스형</option>
+                  <option value="pool_mix">QR 스캔 믹스형 + 당첨확인</option>
                 </select>
               </label>
 
@@ -73,10 +73,10 @@
             <div id="poolPanel" class="filter-group number-board-group" style="display: none; padding-top: 0.5rem; border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 12px; background: rgba(0,0,0,0.15); margin-bottom: 1.5rem;">
               <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.6rem;">
                 <h3 style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
-                  영수증 스캔 및 번호 추출
+                  용지 스캔 및 당첨 확인
                 </h3>
               </div>
-              <p style="margin-bottom: 0.8rem; font-size: 0.85rem; color: rgba(255,255,255,0.7);">카메라로 로또 용지 우측 상단 QR 코드를 스캔하세요. (직접 띄어쓰기로 숫자들을 적으셔도 됩니다.)</p>
+              <p style="margin-bottom: 0.8rem; font-size: 0.85rem; color: rgba(255,255,255,0.7);">카메라로 로또 용지 우측 상단 QR 코드를 스캔하면, 게임 번호를 풀에 담고 해당 회차 기준 당첨 여부도 바로 확인합니다.</p>
               
               <div id="qrReader" style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 0.8rem; display: none; background: #000;"></div>
               
@@ -90,6 +90,19 @@
               </div>
 
               <div id="scannedGamesPreview" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 8px;"></div>
+
+              <div id="ticketCheckPanel" class="ticket-check-panel" hidden>
+                <div class="ticket-check-head">
+                  <div>
+                    <p class="eyebrow" style="margin-bottom: 0.35rem;">Scan Result</p>
+                    <h4 id="ticketCheckTitle">스캔 당첨 확인</h4>
+                  </div>
+                  <span id="ticketCheckStatusBadge" class="ticket-check-badge">대기</span>
+                </div>
+                <p id="ticketCheckSummary" class="ticket-check-summary">QR을 스캔하면 회차와 게임별 당첨 여부가 여기에 표시됩니다.</p>
+                <div id="ticketCheckDraw" class="ticket-check-draw"></div>
+                <div id="ticketCheckList" class="ticket-check-list"></div>
+              </div>
 
               <div class="field" style="margin-bottom: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
