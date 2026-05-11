@@ -1906,44 +1906,60 @@
       }
     }
 
+    function resetPoolQrUi() {
+      if (startQrBtn) startQrBtn.hidden = false;
+      if (stopQrBtn) stopQrBtn.hidden = true;
+      if (document.getElementById("qrReader")) {
+        document.getElementById("qrReader").style.display = "none";
+      }
+    }
+
+    function resetTicketCheckQrUi() {
+      if (ticketCheckQrReader) ticketCheckQrReader.hidden = true;
+      if (ticketCheckStartBtn) ticketCheckStartBtn.hidden = false;
+      if (ticketCheckStopBtn) ticketCheckStopBtn.hidden = true;
+    }
+
     function stopPoolQrScan() {
       if (!poolQrScanner) {
-        if (startQrBtn) startQrBtn.hidden = false;
-        if (stopQrBtn) stopQrBtn.hidden = true;
-        if (document.getElementById("qrReader")) {
-          document.getElementById("qrReader").style.display = "none";
-        }
+        resetPoolQrUi();
         return Promise.resolve();
       }
 
-      return poolQrScanner.stop().catch(function () {
-        return null;
-      }).then(function () {
-        poolQrScanner = null;
-        if (document.getElementById("qrReader")) {
-          document.getElementById("qrReader").style.display = "none";
-        }
-        if (startQrBtn) startQrBtn.hidden = false;
-        if (stopQrBtn) stopQrBtn.hidden = true;
-      });
+      resetPoolQrUi();
+
+      return Promise.resolve()
+        .then(function () {
+          return poolQrScanner.stop();
+        })
+        .catch(function () {
+          return null;
+        })
+        .then(function () {
+          poolQrScanner = null;
+          resetPoolQrUi();
+        });
     }
 
     function stopTicketCheckQrScan() {
       if (!ticketCheckQrScanner) {
-        if (ticketCheckQrReader) ticketCheckQrReader.hidden = true;
-        if (ticketCheckStartBtn) ticketCheckStartBtn.hidden = false;
-        if (ticketCheckStopBtn) ticketCheckStopBtn.hidden = true;
+        resetTicketCheckQrUi();
         return Promise.resolve();
       }
 
-      return ticketCheckQrScanner.stop().catch(function () {
-        return null;
-      }).then(function () {
-        ticketCheckQrScanner = null;
-        if (ticketCheckQrReader) ticketCheckQrReader.hidden = true;
-        if (ticketCheckStartBtn) ticketCheckStartBtn.hidden = false;
-        if (ticketCheckStopBtn) ticketCheckStopBtn.hidden = true;
-      });
+      resetTicketCheckQrUi();
+
+      return Promise.resolve()
+        .then(function () {
+          return ticketCheckQrScanner.stop();
+        })
+        .catch(function () {
+          return null;
+        })
+        .then(function () {
+          ticketCheckQrScanner = null;
+          resetTicketCheckQrUi();
+        });
     }
 
     function openTicketCheckModal() {
@@ -1952,6 +1968,7 @@
       ticketCheckModal.hidden = false;
       ticketCheckModal.setAttribute("aria-hidden", "false");
       document.body.classList.add("ticket-check-modal-open");
+      resetTicketCheckQrUi();
       setTicketCheckModalFeedback("카메라가 안 되는 PC/인앱 브라우저에서는 이미지 업로드로도 확인할 수 있습니다.", "info");
     }
 
@@ -1962,6 +1979,8 @@
         ticketCheckModal.hidden = true;
         ticketCheckModal.setAttribute("aria-hidden", "true");
         document.body.classList.remove("ticket-check-modal-open");
+      }).then(function () {
+        return null;
       });
     }
 
