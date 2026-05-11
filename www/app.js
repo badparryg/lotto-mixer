@@ -1403,7 +1403,7 @@
       var delay = index * 0.06 + "s";
       var inlineContainer = index === activeIndex ? '<div id="inlinePatternTarget" style="margin-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1rem; cursor: default;" onclick="event.stopPropagation();"></div>' : '';
       return '<div class="ticket-card animate-in' + activeClass + '" data-ticket-index="' + index + '" style="animation-delay: ' + delay + '; cursor: pointer;">' +
-        '<span class="ball-row" style="align-items: center; margin-bottom: 0.6rem;">' +
+        '<span class="ball-row" style="align-items: center;">' +
         '<span class="ticket-index" style="margin-right: 0.2rem;">' + String(index + 1).padStart(2, "0") + '</span>' +
         ticket.numbers.map(function (number) {
           return ballMarkup(number, { fixed: result.filterState.includedSet.has(number) });
