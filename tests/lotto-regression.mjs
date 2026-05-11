@@ -181,6 +181,8 @@ assert.match(appSource, /renderScannedTicketResults/, "app should render scanned
 assert.match(appSource, /openTicketCheckModalBtn/, "app should wire the modal launch button");
 assert.match(appSource, /ticketCheckModal/, "app should manage the dedicated ticket check modal");
 assert.match(appSource, /scanFile\(file, true\)/, "app should support scanning uploaded QR images");
+assert.match(appSource, /setTicketCheckCameraAvailability/, "app should disable camera scanning in unsupported browsers");
+assert.match(appSource, /ticketCheckCameraUnavailable/, "app should remember unsupported camera environments during the session");
 assert.doesNotMatch(appSource, /setTimeout\(function \(\) \{\s*startTicketCheckScan\(\);/s, "modal should not auto-start camera on open");
 assert.match(healthHtml, /"status":"ok"/, "health endpoint should advertise an ok status");
 

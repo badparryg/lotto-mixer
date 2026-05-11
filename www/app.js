@@ -33,6 +33,7 @@
     filterStateMap: {},
     poolNumberSet: new Set(),
     lastScannedTicketInfo: null,
+    ticketCheckCameraUnavailable: false,
   };
 
   function createRng(seed) {
@@ -1920,6 +1921,24 @@
       if (ticketCheckStopBtn) ticketCheckStopBtn.hidden = true;
     }
 
+    function setTicketCheckCameraAvailability(isAvailable) {
+      if (!ticketCheckStartBtn) {
+        return;
+      }
+
+      appState.ticketCheckCameraUnavailable = !isAvailable;
+
+      if (isAvailable) {
+        ticketCheckStartBtn.disabled = false;
+        ticketCheckStartBtn.textContent = "📷 카메라 스캔";
+        ticketCheckStartBtn.title = "";
+      } else {
+        ticketCheckStartBtn.disabled = true;
+        ticketCheckStartBtn.textContent = "이 브라우저는 카메라 미지원";
+        ticketCheckStartBtn.title = "현재 브라우저에서는 카메라 스캔 대신 이미지 업로드를 사용해 주세요.";
+      }
+    }
+
     function stopPoolQrScan() {
       if (!poolQrScanner) {
         resetPoolQrUi();
@@ -1969,7 +1988,13 @@
       ticketCheckModal.setAttribute("aria-hidden", "false");
       document.body.classList.add("ticket-check-modal-open");
       resetTicketCheckQrUi();
-      setTicketCheckModalFeedback("카메라가 안 되는 PC/인앱 브라우저에서는 이미지 업로드로도 확인할 수 있습니다.", "info");
+      setTicketCheckCameraAvailability(!appState.ticketCheckCameraUnavailable);
+      setTicketCheckModalFeedback(
+        appState.ticketCheckCameraUnavailable
+          ? "현재 브라우저에서는 카메라 스캔이 동작하지 않습니다. 이미지 업로드로 QR 사진을 확인해 주세요."
+          : "카메라가 안 되는 PC/인앱 브라우저에서는 이미지 업로드로도 확인할 수 있습니다.",
+        "info",
+      );
     }
 
     function closeTicketCheckModal() {
@@ -1986,6 +2011,11 @@
 
     function startTicketCheckScan() {
       if (!ticketCheckQrReader) return;
+
+      if (appState.ticketCheckCameraUnavailable) {
+        setTicketCheckModalFeedback("현재 브라우저에서는 카메라 스캔이 동작하지 않습니다. 이미지 업로드를 이용해 주세요.", "error");
+        return;
+      }
 
       if (typeof Html5Qrcode === "undefined") {
         setTicketCheckModalFeedback("QR 스캐너 라이브러리를 아직 불러오는 중입니다. 잠시 후 다시 시도해 주세요.", "error");
@@ -2012,8 +2042,21 @@
               return;
             },
           )
-          .catch(function () {
-            setTicketCheckModalFeedback("카메라 시작에 실패했습니다. 브라우저 권한을 확인하거나 이미지 업로드로 QR 사진을 확인해 주세요.", "error");
+          .catch(function (error) {
+            var errorName = error && error.name ? String(error.name) : "";
+            var unsupported =
+              !global.isSecureContext ||
+              !global.navigator ||
+              !global.navigator.mediaDevices ||
+              typeof global.navigator.mediaDevices.getUserMedia !== "function" ||
+              /NotAllowedError|NotSupportedError|NotReadableError|TrackStartError/i.test(errorName);
+
+            if (unsupported) {
+              setTicketCheckCameraAvailability(false);
+              setTicketCheckModalFeedback("현재 브라우저에서는 카메라 스캔이 동작하지 않습니다. 이미지 업로드를 이용해 주세요.", "error");
+            } else {
+              setTicketCheckModalFeedback("카메라 시작에 실패했습니다. 브라우저 권한을 확인하거나 이미지 업로드로 QR 사진을 확인해 주세요.", "error");
+            }
             stopTicketCheckQrScan();
           });
       });
