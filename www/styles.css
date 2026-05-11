@@ -628,10 +628,10 @@ body.ticket-check-modal-open {
 .ticket-check-modal__dialog {
   position: relative;
   z-index: 1;
-  width: min(1080px, calc(100vw - 2rem));
-  max-height: min(92vh, 980px);
-  margin: 4vh auto;
-  padding: 1.2rem;
+  width: min(1160px, calc(100vw - 2rem));
+  max-height: min(90vh, 940px);
+  margin: 3vh auto;
+  padding: 1rem;
   overflow: auto;
   border-radius: 30px;
   background:
@@ -648,39 +648,47 @@ body.ticket-check-modal-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.55rem 0.8rem;
+  padding: 0.45rem 0.72rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(7, 16, 29, 0.9);
   color: var(--text);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
 }
 
 .ticket-check-modal__intro {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
+  gap: 0.8rem;
   align-items: end;
 }
 
 .ticket-check-modal__intro h2 {
   margin: 0;
-  font-size: clamp(1.65rem, 3vw, 2.3rem);
+  font-size: clamp(1.45rem, 2.4vw, 1.95rem);
   line-height: 1.08;
 }
 
 .ticket-check-modal__copy {
-  margin: 0.65rem 0 0;
+  margin: 0.45rem 0 0;
   color: var(--muted);
-  line-height: 1.65;
+  line-height: 1.55;
+  font-size: 0.98rem;
 }
 
 .ticket-check-modal__controls {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.55rem;
+}
+
+.ticket-check-modal__controls .primary-button,
+.ticket-check-modal__controls .secondary-button {
+  padding: 0.78rem 0.95rem;
+  border-radius: 16px;
+  font-size: 0.95rem;
 }
 
 .ticket-check-qr-reader {
@@ -691,17 +699,18 @@ body.ticket-check-modal-open {
 }
 
 .ticket-check-modal__feedback {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 .ticket-check-results {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 .ticket-check-sheet {
   display: grid;
-  gap: 1rem;
-  padding: 1rem;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 0.75rem;
+  padding: 0.85rem;
   border-radius: 26px;
   background:
     radial-gradient(circle at top center, rgba(255, 209, 102, 0.12), transparent 34%),
@@ -716,26 +725,31 @@ body.ticket-check-modal-open {
 .ticket-check-sheet__header {
   display: grid;
   justify-items: center;
-  gap: 0.45rem;
+  gap: 0.28rem;
   text-align: center;
+  align-content: center;
+  padding: 0.75rem 0.9rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .ticket-check-sheet__round {
   margin: 0;
-  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  font-size: clamp(1.35rem, 2.4vw, 1.95rem);
   font-weight: 900;
   color: var(--text);
 }
 
 .ticket-check-sheet__date {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
 .ticket-check-sheet__title {
-  margin: 0.3rem 0 0;
-  font-size: 1.2rem;
+  margin: 0.18rem 0 0;
+  font-size: 1rem;
   color: rgba(245, 240, 231, 0.9);
 }
 
@@ -747,22 +761,29 @@ body.ticket-check-modal-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
+  gap: 0.55rem;
   flex-wrap: wrap;
 }
 
 .ticket-check-winning-main,
 .ticket-check-winning-bonus {
   display: flex;
-  gap: 0.55rem;
+  gap: 0.38rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .ticket-check-winning-plus {
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 900;
   color: var(--accent);
+}
+
+.ticket-check-winning-main .ball,
+.ticket-check-winning-bonus .ball {
+  width: 2.8rem;
+  height: 2.8rem;
+  font-size: 1.16rem;
 }
 
 .ticket-check-winning-bonus-ball {
@@ -774,32 +795,34 @@ body.ticket-check-modal-open {
 
 .ticket-check-summary-card {
   display: grid;
-  gap: 0.55rem;
-  padding: 1.5rem;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  align-content: center;
+  min-height: 100%;
 }
 
 .ticket-check-summary-card__eyebrow {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
 .ticket-check-summary-card__headline {
   margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-size: clamp(1.45rem, 2.6vw, 2.15rem);
   color: var(--text);
-  line-height: 1.14;
+  line-height: 1.08;
 }
 
 .ticket-check-summary-card__copy {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.9rem;
+  line-height: 1.55;
   color: var(--muted);
 }
 
@@ -857,6 +880,7 @@ body.ticket-check-modal-open {
 }
 
 .ticket-check-board {
+  grid-column: 1 / -1;
   border-radius: 24px;
   overflow: hidden;
   background:
@@ -874,13 +898,13 @@ body.ticket-check-modal-open {
 .ticket-check-board__head {
   background: rgba(255, 255, 255, 0.04);
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 800;
 }
 
 .ticket-check-board__head span,
 .ticket-check-row > div {
-  padding: 1rem;
+  padding: 0.78rem 0.9rem;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -899,7 +923,7 @@ body.ticket-check-modal-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text);
   background: rgba(255, 255, 255, 0.02);
@@ -909,7 +933,7 @@ body.ticket-check-modal-open {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 0.45rem;
+  gap: 0.32rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%),
     rgba(7, 16, 29, 0.55);
@@ -917,28 +941,28 @@ body.ticket-check-modal-open {
 
 .ticket-check-row__result-copy {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 700;
   text-align: center;
 }
 
 .ticket-check-row__numbers {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
   align-content: center;
 }
 
 .ticket-check-row__ball-list {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.42rem;
   flex-wrap: wrap;
 }
 
 .ticket-check-game-ball {
-  width: 3.05rem;
-  height: 3.05rem;
-  font-size: 1.18rem;
+  width: 2.55rem;
+  height: 2.55rem;
+  font-size: 1rem;
   padding-top: 2px;
   padding-right: 0;
 }
@@ -965,8 +989,8 @@ body.ticket-check-modal-open {
 .ticket-check-row__match {
   margin: 0;
   color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .reset-button {
@@ -1522,6 +1546,10 @@ body.ticket-check-modal-open {
   }
 
   .ticket-check-modal__intro {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-check-sheet {
     grid-template-columns: 1fr;
   }
 
