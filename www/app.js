@@ -1939,6 +1939,19 @@
       }
     }
 
+    function isLikelyEmbeddedCameraLimitedEnv() {
+      var ua = global.navigator && global.navigator.userAgent ? String(global.navigator.userAgent) : "";
+
+      if (!global.isSecureContext) {
+        return true;
+      }
+      if (!global.navigator || !global.navigator.mediaDevices || typeof global.navigator.mediaDevices.getUserMedia !== "function") {
+        return true;
+      }
+
+      return /\bElectron\b|\bCodex\b|\bOpenAI\b/i.test(ua);
+    }
+
     function stopPoolQrScan() {
       if (!poolQrScanner) {
         resetPoolQrUi();
@@ -1988,6 +2001,9 @@
       ticketCheckModal.setAttribute("aria-hidden", "false");
       document.body.classList.add("ticket-check-modal-open");
       resetTicketCheckQrUi();
+      if (isLikelyEmbeddedCameraLimitedEnv()) {
+        setTicketCheckCameraAvailability(false);
+      }
       setTicketCheckCameraAvailability(!appState.ticketCheckCameraUnavailable);
       setTicketCheckModalFeedback(
         appState.ticketCheckCameraUnavailable
@@ -2133,6 +2149,9 @@
     }
 
     if (ticketCheckStartBtn) {
+      if (isLikelyEmbeddedCameraLimitedEnv()) {
+        setTicketCheckCameraAvailability(false);
+      }
       ticketCheckStartBtn.addEventListener("click", startTicketCheckScan);
     }
 
