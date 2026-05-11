@@ -1386,7 +1386,7 @@
       generationMeta.textContent = PROFILE_COPY[result.profile] + " / 최근 " + result.recentWindow + "회 특별 반영 / " + includeSummary + " / " + filterSummary;
     }
     if (feedback) {
-      feedback.textContent = result.error ? result.error : PROFILE_COPY[result.profile] + " 기준으로 " + result.ticketCount + "개 조합이 생성되었습니다. 우측 패턴 지도를 확인해 보세요.";
+      feedback.textContent = result.error ? result.error : PROFILE_COPY[result.profile] + " 기준으로 " + result.ticketCount + "개 조합이 생성되었습니다. 카드를 눌러 패턴 지도를 확인해 보세요.";
     }
     if (!target) {
       renderPatternPanel(result, activeIndex);

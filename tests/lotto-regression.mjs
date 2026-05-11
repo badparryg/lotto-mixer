@@ -232,6 +232,8 @@ assert.match(appSource, /ticketCheckModal/, "app should manage the dedicated tic
 assert.match(appSource, /scanFile\(file, true\)/, "app should support scanning uploaded QR images");
 assert.match(appSource, /setTicketCheckCameraAvailability/, "app should disable camera scanning in unsupported browsers");
 assert.match(appSource, /ticketCheckCameraUnavailable/, "app should remember unsupported camera environments during the session");
+assert.match(appSource, /카드를 눌러 패턴 지도를 확인해 보세요/, "generation feedback should describe inline pattern access");
+assert.doesNotMatch(appSource, /우측 패턴 지도를 확인해 보세요/, "generation feedback should no longer reference a missing right-side panel");
 assert.doesNotMatch(appSource, /setTimeout\(function \(\) \{\s*startTicketCheckScan\(\);/s, "modal should not auto-start camera on open");
 assert.match(healthHtml, /"status":"ok"/, "health endpoint should advertise an ok status");
 
