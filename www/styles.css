@@ -1498,16 +1498,18 @@ body.ticket-check-modal-open {
     grid-template-columns: 1fr;
   }
   .generator-action-row.sticky-action-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    background: rgba(8, 20, 32, 0.85) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    padding: 1rem 1.2rem calc(1rem + env(safe-area-inset-bottom)) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    position: static;
+    bottom: auto;
+    z-index: 10;
+    margin-top: 0.8rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-top: none !important;
   }
 }
 
@@ -1604,6 +1606,27 @@ body.ticket-check-modal-open {
   .results-workspace {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  .generator-action-row.sticky-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin-top: 0;
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)) !important;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+    background: rgba(8, 20, 32, 0.85) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .dashboard-layout {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom));
   }
 
   .results-workspace {
