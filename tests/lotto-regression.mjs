@@ -140,6 +140,55 @@ assert.deepEqual(
   "QR parser should decode six-number games",
 );
 
+const fiveLineTicket = app.extractTicketInfoFromText(
+  "https://m.dhlottery.co.kr/?v=1222q121722273137w040718213134e101726313741r040721273237t011119293337202605021234",
+);
+assert.equal(fiveLineTicket.round, 1222, "QR parser should keep reading the round from multi-line tickets");
+assert.equal(fiveLineTicket.games.length, 5, "QR parser should keep all five games even when metadata trails the last line");
+assert.deepEqual(
+  Array.from(fiveLineTicket.games[4]),
+  [1, 11, 19, 29, 33, 37],
+  "QR parser should preserve the final ticket line before trailing metadata",
+);
+
+const ticketCheckDom = Object.fromEntries(
+  [
+    "ticketCheckResults",
+    "ticketCheckRoundLabel",
+    "ticketCheckDateLabel",
+    "ticketCheckWinningNumbers",
+    "ticketCheckRows",
+    "ticketCheckSummaryEyebrow",
+    "ticketCheckSummaryHeadline",
+    "ticketCheckSummaryText",
+    "ticketCheckSummaryCard",
+  ].map((id) => [
+    id,
+    {
+      id,
+      hidden: true,
+      textContent: "",
+      innerHTML: "",
+      className: "",
+    },
+  ]),
+);
+
+appSandbox.document = {
+  getElementById(id) {
+    return ticketCheckDom[id] || null;
+  },
+};
+app.renderScannedTicketResults(fiveLineTicket);
+
+assert.equal(ticketCheckDom.ticketCheckResults.hidden, false, "rendered ticket results should become visible");
+assert.equal(
+  (ticketCheckDom.ticketCheckRows.innerHTML.match(/<article class="ticket-check-row">/g) || []).length,
+  5,
+  "rendered ticket results should include all five ticket rows",
+);
+assert.match(ticketCheckDom.ticketCheckRows.innerHTML, />E</, "rendered ticket results should include the final E row");
+
 const evaluatedTicket = app.evaluateScannedTicket(scannedTicket, history);
 assert.equal(evaluatedTicket.status, "ready", "known rounds should evaluate immediately");
 assert.equal(evaluatedTicket.games[0].rank.label, "1등", "perfect matches should be recognized as first prize");

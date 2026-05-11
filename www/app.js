@@ -212,19 +212,25 @@
       var data = qrMatch[1];
       var roundToken = data.substring(0, 4);
       var body = data.substring(4);
-      var parts = body.split(/[A-Za-z]/);
+      var taggedGameChunks = Array.from(body.matchAll(/[a-zA-Z](\d{12})/g)).map(function (match) {
+        return match[1];
+      });
+      var gameChunks = taggedGameChunks.length ? taggedGameChunks : (body.match(/\d{12}/g) || []);
       if (/^\d{4}$/.test(roundToken)) {
         round = parseInt(roundToken, 10);
       }
-      parts.forEach(function(part) {
-        if (part.length === 12) {
-          var gameNums = [];
-          for (var i = 0; i < 12; i += 2) {
-            gameNums.push(parseInt(part.substring(i, i+2), 10));
-          }
-          if (new Set(gameNums).size === 6) {
-            games.push(gameNums.sort(function(a,b) { return a - b; }));
-          }
+
+      gameChunks.forEach(function (chunk) {
+        var gameNums = [];
+        for (var i = 0; i < 12; i += 2) {
+          gameNums.push(parseInt(chunk.substring(i, i + 2), 10));
+        }
+        if (
+          gameNums.length === 6 &&
+          gameNums.every(function (number) { return number >= 1 && number <= 45; }) &&
+          new Set(gameNums).size === 6
+        ) {
+          games.push(gameNums.sort(function(a,b) { return a - b; }));
         }
       });
     }
@@ -2377,6 +2383,7 @@
     extractTicketInfoFromText: extractTicketInfoFromText,
     evaluateScannedTicket: evaluateScannedTicket,
     getTicketResultPresentation: getTicketResultPresentation,
+    renderScannedTicketResults: renderScannedTicketResults,
     syncLatestHistory: syncLatestHistory,
     validateTicket: validateTicket,
     runApp: runApp,
