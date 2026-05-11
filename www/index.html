@@ -43,7 +43,7 @@
                   <option value="balanced">균형형</option>
                   <option value="trend">트렌드형</option>
                   <option value="contrarian">역발상형</option>
-                  <option value="pool_mix">QR 스캔 믹스형 + 당첨확인</option>
+                  <option value="pool_mix">QR 스캔 믹스형</option>
                 </select>
               </label>
 
@@ -73,16 +73,16 @@
             <div id="poolPanel" class="filter-group number-board-group" style="display: none; padding-top: 0.5rem; border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 12px; background: rgba(0,0,0,0.15); margin-bottom: 1.5rem;">
               <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.6rem;">
                 <h3 style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
-                  용지 스캔 및 당첨 확인
+                  용지 QR 스캔으로 번호 추출
                 </h3>
               </div>
-              <p style="margin-bottom: 0.8rem; font-size: 0.85rem; color: rgba(255,255,255,0.7);">카메라로 로또 용지 우측 상단 QR 코드를 스캔하면, 게임 번호를 풀에 담고 해당 회차 기준 당첨 여부도 바로 확인합니다.</p>
+              <p style="margin-bottom: 0.8rem; font-size: 0.85rem; color: rgba(255,255,255,0.7);">카메라로 로또 용지 우측 상단 QR 코드를 스캔하면, 게임 번호를 읽어서 아래 번호 풀에 자동으로 담습니다.</p>
               
               <div id="qrReader" style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 0.8rem; display: none; background: #000;"></div>
               
               <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
                 <button type="button" id="startQrBtn" class="primary-button action-button" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; flex: 1;">
-                  📷 카메라 스캔
+                  📷 용지 QR 스캔
                 </button>
                 <button type="button" id="stopQrBtn" class="secondary-button" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; flex: 1; display: none;">
                   스캔 중지
@@ -90,19 +90,6 @@
               </div>
 
               <div id="scannedGamesPreview" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 8px;"></div>
-
-              <div id="ticketCheckPanel" class="ticket-check-panel" hidden>
-                <div class="ticket-check-head">
-                  <div>
-                    <p class="eyebrow" style="margin-bottom: 0.35rem;">Scan Result</p>
-                    <h4 id="ticketCheckTitle">스캔 당첨 확인</h4>
-                  </div>
-                  <span id="ticketCheckStatusBadge" class="ticket-check-badge">대기</span>
-                </div>
-                <p id="ticketCheckSummary" class="ticket-check-summary">QR을 스캔하면 회차와 게임별 당첨 여부가 여기에 표시됩니다.</p>
-                <div id="ticketCheckDraw" class="ticket-check-draw"></div>
-                <div id="ticketCheckList" class="ticket-check-list"></div>
-              </div>
 
               <div class="field" style="margin-bottom: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
@@ -157,6 +144,9 @@
         <div class="generator-action-row sticky-action-bar" style="background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; margin: 0 !important;">
           <button type="submit" id="generateBtn" form="generatorForm" class="primary-button action-button generate-action-button" style="box-shadow: none !important;">
             이번 주 번호 생성하기
+          </button>
+          <button type="button" id="openTicketCheckModalBtn" class="secondary-button action-button ticket-check-launch-button">
+            당첨번호 확인
           </button>
         </div>
       </aside>
@@ -231,6 +221,60 @@
     </main>
 
     <noscript>이 페이지는 JavaScript가 켜져 있어야 동작합니다.</noscript>
+    <div id="ticketCheckModal" class="ticket-check-modal" hidden aria-hidden="true">
+      <div class="ticket-check-modal__backdrop" data-ticket-check-close></div>
+      <section class="ticket-check-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ticketCheckModalHeading">
+        <button type="button" id="closeTicketCheckModalBtn" class="ticket-check-modal__close" aria-label="당첨 확인 모달 닫기">
+          닫기
+        </button>
+        <div class="ticket-check-modal__intro">
+          <div>
+            <p class="eyebrow">Ticket Checker</p>
+            <h2 id="ticketCheckModalHeading">로또 QR 당첨 확인</h2>
+            <p class="ticket-check-modal__copy">로또 용지 우측 상단 QR 코드를 스캔하면 회차, 당첨 번호, 줄별 결과를 한 번에 정리해서 보여드립니다.</p>
+          </div>
+          <div class="ticket-check-modal__controls">
+            <button type="button" id="ticketCheckStartBtn" class="primary-button action-button">
+              📷 카메라 열기
+            </button>
+            <button type="button" id="ticketCheckStopBtn" class="secondary-button action-button" hidden>
+              스캔 중지
+            </button>
+          </div>
+        </div>
+
+        <div id="ticketCheckQrReader" class="ticket-check-qr-reader" hidden></div>
+        <p id="ticketCheckModalFeedback" class="toolbar-feedback ticket-check-modal__feedback" aria-live="polite">
+          버튼을 누르거나 모달을 열면 카메라가 켜지고, QR 인식 후 결과표가 아래에 나타납니다.
+        </p>
+
+        <section id="ticketCheckResults" class="ticket-check-results" hidden>
+          <div class="ticket-check-sheet">
+            <header class="ticket-check-sheet__header">
+              <p id="ticketCheckRoundLabel" class="ticket-check-sheet__round">로또 6/45</p>
+              <p id="ticketCheckDateLabel" class="ticket-check-sheet__date">QR 스캔 대기 중</p>
+              <h3 class="ticket-check-sheet__title">당첨번호</h3>
+              <div id="ticketCheckWinningNumbers" class="ticket-check-sheet__winning"></div>
+            </header>
+
+            <section id="ticketCheckSummaryCard" class="ticket-check-summary-card is-empty">
+              <p id="ticketCheckSummaryEyebrow" class="ticket-check-summary-card__eyebrow">스캔 전</p>
+              <h4 id="ticketCheckSummaryHeadline" class="ticket-check-summary-card__headline">QR 코드를 스캔해 주세요.</h4>
+              <p id="ticketCheckSummaryText" class="ticket-check-summary-card__copy">당첨 결과와 줄별 매칭 숫자를 보기 좋게 정리해서 보여드립니다.</p>
+            </section>
+
+            <section class="ticket-check-board">
+              <div class="ticket-check-board__head">
+                <span>게임</span>
+                <span>결과</span>
+                <span>번호 조합</span>
+              </div>
+              <div id="ticketCheckRows" class="ticket-check-board__body"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </div>
     <script src="./data/lotto-history.js"></script>
     <script src="./data/latest-draw.js"></script>
     <script src="./app.js"></script>

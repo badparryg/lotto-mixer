@@ -144,12 +144,22 @@ const evaluatedTicket = app.evaluateScannedTicket(scannedTicket, history);
 assert.equal(evaluatedTicket.status, "ready", "known rounds should evaluate immediately");
 assert.equal(evaluatedTicket.games[0].rank.label, "1등", "perfect matches should be recognized as first prize");
 assert.equal(evaluatedTicket.games[1].rank.label, "미당첨", "non-winning games should be marked as misses");
+const winningPresentation = app.getTicketResultPresentation(evaluatedTicket);
+assert.equal(winningPresentation.tone, "rank-1", "winning ticket summary should emphasize the best rank");
+assert.match(winningPresentation.headline, /1등/, "winning summary should mention the highest prize");
 
 const pendingTicket = app.evaluateScannedTicket(
   { round: history.at(-1).round + 1, games: [[1, 2, 3, 4, 5, 6]] },
   history,
 );
 assert.equal(pendingTicket.status, "pending", "future rounds should stay pending");
+assert.equal(app.getTicketResultPresentation(pendingTicket).tone, "pending", "future rounds should render as pending");
+
+const missedTicket = app.evaluateScannedTicket(
+  { round: history.at(-1).round, games: [[1, 2, 3, 4, 5, 6]] },
+  history,
+);
+assert.equal(app.getTicketResultPresentation(missedTicket).tone, "miss", "non-winning tickets should render as misses");
 
 const html = fs.readFileSync(path.join(webRoot, "index.html"), "utf8");
 const healthHtml = fs.readFileSync(path.join(webRoot, "health/index.html"), "utf8");
@@ -158,11 +168,17 @@ assert.match(html, /data\/latest-draw\.js/, "index should load latest draw overr
 assert.match(html, /app\.js/, "index should load app.js");
 assert.match(html, /unifiedNumberGrid/, "index should render the unified filter board");
 assert.match(html, /poolNumberGrid/, "index should render the pool mix board");
-assert.match(html, /ticketCheckPanel/, "index should render the scanned ticket check panel");
+assert.match(html, /ticketCheckModal/, "index should render the dedicated ticket check modal");
+assert.match(html, /openTicketCheckModalBtn/, "index should render the bottom ticket check launch button");
+assert.match(html, /ticketCheckRows/, "index should render the ticket result rows container");
+assert.doesNotMatch(html, /ticketCheckQuickButton/, "header quick button should be removed");
+assert.doesNotMatch(html, /QR 스캔 믹스형 \+ 당첨확인/, "pool mix profile should no longer include ticket checking");
 assert.match(html, /historySyncStatus/, "index should render history sync status");
 assert.match(html, /resultsFeedback/, "index should render generation feedback");
 assert.match(appSource, /historySyncButton/, "app should render the manual update button");
 assert.match(appSource, /renderScannedTicketResults/, "app should render scanned ticket result summaries");
+assert.match(appSource, /openTicketCheckModalBtn/, "app should wire the modal launch button");
+assert.match(appSource, /ticketCheckModal/, "app should manage the dedicated ticket check modal");
 assert.match(healthHtml, /"status":"ok"/, "health endpoint should advertise an ok status");
 
 console.log("Regression OK:", {

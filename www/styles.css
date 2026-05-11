@@ -188,6 +188,11 @@ body {
   text-wrap: balance;
 }
 
+.app-header {
+  display: grid;
+  gap: 0.6rem;
+}
+
 .section-head h2 {
   font-size: clamp(1.55rem, 2vw, 2rem);
   font-weight: 800;
@@ -505,29 +510,45 @@ details[open] .dropdown-chevron {
   line-height: 1.5;
 }
 
-.ticket-check-panel {
-  margin-bottom: 1rem;
-  padding: 0.95rem 1rem;
-  border-radius: 18px;
-  background:
-    linear-gradient(155deg, rgba(95, 184, 255, 0.12), transparent 45%),
-    rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(95, 184, 255, 0.16);
+.toolbar-feedback.is-error {
+  color: #ffb7b0;
 }
 
-.ticket-check-head {
+.toolbar-feedback.is-success {
+  color: var(--mint);
+}
+
+.toolbar-feedback.is-info {
+  color: var(--blue);
+}
+
+.scanned-games-preview__label {
+  margin-bottom: 0.45rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.scanned-games-preview__row {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.65rem;
 }
 
-.ticket-check-head h4 {
+.scanned-games-preview__letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.scanned-games-preview__balls {
   margin: 0;
-  font-size: 1rem;
 }
 
-.ticket-check-badge,
 .ticket-rank-badge {
   display: inline-flex;
   align-items: center;
@@ -540,96 +561,379 @@ details[open] .dropdown-chevron {
   white-space: nowrap;
 }
 
-.ticket-check-badge.is-ready,
-.ticket-rank-badge.is-rank {
-  background: rgba(116, 242, 206, 0.16);
-  color: var(--mint);
-  border: 1px solid rgba(116, 242, 206, 0.3);
-}
-
-.ticket-check-badge.is-pending,
 .ticket-rank-badge.is-pending {
   background: rgba(255, 209, 102, 0.16);
-  color: var(--accent);
+  color: #a46500;
   border: 1px solid rgba(255, 209, 102, 0.3);
 }
 
-.ticket-check-badge.is-error,
 .ticket-rank-badge.is-miss {
-  background: rgba(255, 122, 112, 0.12);
-  color: #ffd0cb;
-  border: 1px solid rgba(255, 122, 112, 0.22);
+  background: rgba(83, 91, 103, 0.12);
+  color: #707b86;
+  border: 1px solid rgba(83, 91, 103, 0.18);
 }
 
-.ticket-rank-badge.is-jackpot {
-  background: linear-gradient(135deg, rgba(255, 209, 102, 0.2), rgba(255, 138, 61, 0.2));
-  color: var(--accent);
-  border: 1px solid rgba(255, 209, 102, 0.38);
+.ticket-rank-badge.is-rank-1 {
+  background: linear-gradient(135deg, #fff0bd 0%, #ffc44b 100%);
+  color: #7a4200;
+  border: 1px solid rgba(255, 196, 75, 0.9);
 }
 
-.ticket-check-summary {
-  margin: 0.8rem 0 0;
+.ticket-rank-badge.is-rank-2 {
+  background: linear-gradient(135deg, #ffe6b7 0%, #ff9d45 100%);
+  color: #7a3900;
+  border: 1px solid rgba(255, 157, 69, 0.8);
+}
+
+.ticket-rank-badge.is-rank-3 {
+  background: linear-gradient(135deg, #ddfff5 0%, #7de0c1 100%);
+  color: #0f5a46;
+  border: 1px solid rgba(125, 224, 193, 0.75);
+}
+
+.ticket-rank-badge.is-rank-4 {
+  background: linear-gradient(135deg, #dcedff 0%, #8ec4ff 100%);
+  color: #0f4b8b;
+  border: 1px solid rgba(142, 196, 255, 0.75);
+}
+
+.ticket-rank-badge.is-rank-5 {
+  background: linear-gradient(135deg, #ece8ff 0%, #c6b8ff 100%);
+  color: #4f3d96;
+  border: 1px solid rgba(198, 184, 255, 0.75);
+}
+
+.ticket-check-launch-button {
+  box-shadow: none;
+}
+
+body.ticket-check-modal-open {
+  overflow: hidden;
+}
+
+.ticket-check-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.ticket-check-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.74);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.ticket-check-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(1080px, calc(100vw - 2rem));
+  max-height: min(92vh, 980px);
+  margin: 4vh auto;
+  padding: 1.2rem;
+  overflow: auto;
+  border-radius: 30px;
+  background:
+    linear-gradient(145deg, rgba(255, 209, 102, 0.1), transparent 20%),
+    rgba(10, 22, 36, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.45);
+}
+
+.ticket-check-modal__close {
+  position: sticky;
+  top: 0;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(7, 16, 29, 0.9);
   color: var(--text);
-  font-size: 0.86rem;
-  line-height: 1.6;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.ticket-check-draw {
-  margin-top: 0.8rem;
+.ticket-check-modal__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 1rem;
+  align-items: end;
 }
 
-.ticket-check-draw-card,
-.ticket-check-item {
-  border-radius: 16px;
-  background: rgba(7, 16, 29, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.85rem;
+.ticket-check-modal__intro h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
+  line-height: 1.08;
 }
 
-.ticket-check-draw-card {
+.ticket-check-modal__copy {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.ticket-check-modal__controls {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ticket-check-qr-reader {
+  margin-top: 1rem;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #000;
+}
+
+.ticket-check-modal__feedback {
+  margin-top: 1rem;
+}
+
+.ticket-check-results {
+  margin-top: 1rem;
+}
+
+.ticket-check-sheet {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 26px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4fa 100%);
+  color: #2f3741;
+}
+
+.ticket-check-sheet__header {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.ticket-check-sheet__round {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  font-weight: 900;
+  color: #21262c;
+}
+
+.ticket-check-sheet__date {
+  margin: 0;
+  font-size: 1rem;
+  color: #697482;
+}
+
+.ticket-check-sheet__title {
+  margin: 0.3rem 0 0;
+  font-size: 1.2rem;
+  color: #2c3238;
+}
+
+.ticket-check-sheet__winning {
+  width: 100%;
+}
+
+.ticket-check-winning-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.ticket-check-winning-main,
+.ticket-check-winning-bonus {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ticket-check-winning-plus {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #303740;
+}
+
+.ticket-check-winning-bonus-ball {
+  box-shadow:
+    inset -5px -5px 12px rgba(0, 0, 0, 0.22),
+    inset 3px 3px 10px rgba(255, 255, 255, 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.ticket-check-summary-card {
   display: grid;
   gap: 0.55rem;
+  padding: 1.5rem;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(22, 34, 48, 0.08);
+  text-align: center;
+  box-shadow: 0 18px 36px rgba(23, 34, 49, 0.08);
 }
 
-.ticket-check-label {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
+.ticket-check-summary-card__eyebrow {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7684;
 }
 
-.ticket-check-list {
+.ticket-check-summary-card__headline {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  color: #222a33;
+  line-height: 1.14;
+}
+
+.ticket-check-summary-card__copy {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #4f5c69;
+}
+
+.ticket-check-summary-card.is-empty {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.ticket-check-summary-card.is-pending,
+.ticket-check-summary-card.is-unknown {
+  background: linear-gradient(180deg, #fff4cf 0%, #fff9e9 100%);
+}
+
+.ticket-check-summary-card.is-miss {
+  background: linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%);
+}
+
+.ticket-check-summary-card.is-rank-1 {
+  background: linear-gradient(180deg, #fff1bc 0%, #ffe08a 100%);
+}
+
+.ticket-check-summary-card.is-rank-2 {
+  background: linear-gradient(180deg, #ffe8c7 0%, #ffd199 100%);
+}
+
+.ticket-check-summary-card.is-rank-3 {
+  background: linear-gradient(180deg, #e8fff7 0%, #d1f7e7 100%);
+}
+
+.ticket-check-summary-card.is-rank-4 {
+  background: linear-gradient(180deg, #eaf4ff 0%, #dcecff 100%);
+}
+
+.ticket-check-summary-card.is-rank-5 {
+  background: linear-gradient(180deg, #f0ebff 0%, #e2d7ff 100%);
+}
+
+.ticket-check-board {
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid rgba(24, 35, 47, 0.12);
+}
+
+.ticket-check-board__head,
+.ticket-check-row {
   display: grid;
-  gap: 0.65rem;
-  margin-top: 0.8rem;
+  grid-template-columns: 82px 150px minmax(0, 1fr);
 }
 
-.ticket-check-item-head {
+.ticket-check-board__head {
+  background: #f2f5f9;
+  color: #6a7380;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.ticket-check-board__head span,
+.ticket-check-row > div {
+  padding: 1rem;
+  border-right: 1px solid rgba(26, 36, 48, 0.1);
+}
+
+.ticket-check-board__head span:last-child,
+.ticket-check-row > div:last-child {
+  border-right: 0;
+}
+
+.ticket-check-row {
+  align-items: stretch;
+  color: #222a33;
+  border-top: 1px solid rgba(26, 36, 48, 0.1);
+}
+
+.ticket-check-row__game {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.8rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 800;
 }
 
-.ticket-check-item-title {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.ticket-check-row__result {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.45rem;
+  background: rgba(241, 245, 250, 0.72);
 }
 
-.ticket-check-item-title strong {
-  font-size: 0.95rem;
-}
-
-.ticket-check-item-copy {
-  color: var(--muted);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-
-.ticket-check-match {
-  margin-top: 0.7rem;
-  color: var(--muted);
+.ticket-check-row__result-copy {
+  color: #707b86;
   font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ticket-check-row__numbers {
+  display: grid;
+  gap: 0.75rem;
+  align-content: center;
+}
+
+.ticket-check-row__ball-list {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.ticket-check-game-ball {
+  width: 3.05rem;
+  height: 3.05rem;
+  font-size: 1.18rem;
+  padding-top: 2px;
+  padding-right: 0;
+}
+
+.ticket-check-game-ball.is-hit {
+  opacity: 1;
+}
+
+.ticket-check-game-ball.is-bonus-hit {
+  opacity: 1;
+  box-shadow:
+    inset -5px -5px 12px rgba(0, 0, 0, 0.3),
+    inset 3px 3px 10px rgba(255, 255, 255, 0.45),
+    0 0 0 3px rgba(255, 138, 61, 0.2);
+}
+
+.ticket-check-game-ball.is-miss {
+  background: #edf2f7;
+  color: #9aa3ad;
+  box-shadow: none;
+  border: 1px solid rgba(145, 154, 166, 0.22);
+}
+
+.ticket-check-row__match {
+  margin: 0;
+  color: #596573;
+  font-size: 0.9rem;
   line-height: 1.55;
 }
 
@@ -1178,6 +1482,27 @@ details[open] .dropdown-chevron {
   .section-note {
     text-align: left;
   }
+
+  .ticket-check-modal__dialog {
+    width: min(100vw - 1rem, 1080px);
+    margin: 2vh auto;
+    padding: 1rem;
+  }
+
+  .ticket-check-modal__intro {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-check-board__head,
+  .ticket-check-row {
+    grid-template-columns: 64px 118px minmax(0, 1fr);
+  }
+
+  .ticket-check-game-ball {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.05rem;
+  }
 }
 
 @media (max-width: 680px) {
@@ -1225,6 +1550,53 @@ details[open] .dropdown-chevron {
 
   .results-workspace {
     padding-bottom: 1rem;
+  }
+
+  .ticket-check-sheet {
+    padding: 0.8rem;
+  }
+
+  .ticket-check-winning-row {
+    gap: 0.5rem;
+  }
+
+  .ticket-check-board {
+    border-radius: 18px;
+  }
+
+  .ticket-check-board__head {
+    display: none;
+  }
+
+  .ticket-check-row {
+    grid-template-columns: 56px 1fr;
+  }
+
+  .ticket-check-row__game {
+    font-size: 1.35rem;
+  }
+
+  .ticket-check-row__result {
+    grid-column: 2;
+    justify-items: start;
+    padding-bottom: 0.4rem !important;
+  }
+
+  .ticket-check-row__numbers {
+    grid-column: 1 / -1;
+    padding-top: 0.2rem !important;
+  }
+
+  .ticket-check-row__numbers,
+  .ticket-check-row__result,
+  .ticket-check-row__game {
+    border-right: 0;
+  }
+
+  .ticket-check-game-ball {
+    width: 2.45rem;
+    height: 2.45rem;
+    font-size: 0.98rem;
   }
 
   .number-board {
