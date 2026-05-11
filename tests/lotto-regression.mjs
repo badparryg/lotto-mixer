@@ -2,13 +2,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
-import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
-const require = createRequire(import.meta.url);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const dataScript = fs.readFileSync(path.join(repoRoot, "data/lotto-history.js"), "utf8");
-const latestDrawScript = fs.readFileSync(path.join(repoRoot, "data/latest-draw.js"), "utf8");
+const webRoot = path.join(repoRoot, "www");
+const dataScript = fs.readFileSync(path.join(webRoot, "data/lotto-history.js"), "utf8");
+const latestDrawScript = fs.readFileSync(path.join(webRoot, "data/latest-draw.js"), "utf8");
 const sandbox = { window: {} };
 
 vm.runInNewContext(dataScript, sandbox);
@@ -16,7 +15,27 @@ vm.runInNewContext(latestDrawScript, sandbox);
 
 const history = sandbox.window.LOTTO_HISTORY;
 const latestOverride = sandbox.window.LOTTO_LATEST_OVERRIDE;
-const app = require(path.join(repoRoot, "app.js"));
+const appSource = fs.readFileSync(path.join(webRoot, "app.js"), "utf8");
+const appSandbox = {
+  console,
+  document: undefined,
+  module: { exports: {} },
+  exports: {},
+  setTimeout,
+  clearTimeout,
+  window: {
+    Capacitor: null,
+    LOTTO_HISTORY: history,
+    LOTTO_LATEST_OVERRIDE: latestOverride,
+    location: { protocol: "file:" },
+  },
+};
+
+appSandbox.global = appSandbox.window;
+appSandbox.globalThis = appSandbox.window;
+vm.runInNewContext(appSource, appSandbox);
+
+const app = appSandbox.module.exports;
 
 assert.ok(history.length > 0, "history should not be empty");
 assert.equal(history[0].round, 1, "first round should be 1");
@@ -112,14 +131,17 @@ filtered.tickets.forEach((ticket, index) => {
   assert.ok(ticket.numbers.includes(17), `filtered ticket ${index + 1} should include fixed number 17`);
 });
 
-const html = fs.readFileSync(path.join(repoRoot, "index.html"), "utf8");
+const html = fs.readFileSync(path.join(webRoot, "index.html"), "utf8");
+const healthHtml = fs.readFileSync(path.join(webRoot, "health/index.html"), "utf8");
 assert.match(html, /data\/lotto-history\.js/, "index should load bundled history data");
 assert.match(html, /data\/latest-draw\.js/, "index should load latest draw override data");
 assert.match(html, /app\.js/, "index should load app.js");
-assert.match(html, /includeNumberGrid/, "index should render include number board");
-assert.match(html, /excludeNumberGrid/, "index should render exclude number board");
+assert.match(html, /unifiedNumberGrid/, "index should render the unified filter board");
+assert.match(html, /poolNumberGrid/, "index should render the pool mix board");
 assert.match(html, /historySyncStatus/, "index should render history sync status");
-assert.match(html, /historySyncButton/, "index should render the manual update button");
+assert.match(html, /resultsFeedback/, "index should render generation feedback");
+assert.match(appSource, /historySyncButton/, "app should render the manual update button");
+assert.match(healthHtml, /"status":"ok"/, "health endpoint should advertise an ok status");
 
 console.log("Regression OK:", {
   rounds: history.length,

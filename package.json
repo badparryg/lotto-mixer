@@ -1,12 +1,15 @@
 {
   "name": "lotto",
   "version": "1.0.0",
-  "main": "app.js",
+  "main": "www/app.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "node --check www/app.js && node --check scripts/update-lotto-data.mjs && node --check tests/lotto-regression.mjs && node --check tests/lotto-update-script.mjs",
+    "test": "node tests/lotto-regression.mjs && node tests/lotto-update-script.mjs",
+    "test:regression": "node tests/lotto-regression.mjs",
+    "test:update-script": "node tests/lotto-update-script.mjs"
   },
   "keywords": [],
   "author": "",
