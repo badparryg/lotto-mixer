@@ -131,6 +131,24 @@ filtered.tickets.forEach((ticket, index) => {
   assert.ok(ticket.numbers.includes(17), `filtered ticket ${index + 1} should include fixed number 17`);
 });
 
+const heroSignals = app.pickHeroSignalNumbers({
+  scoreTable: [
+    { number: 3, score: 0.99, overall: 250, recent: 8, gap: 1 },
+    { number: 7, score: 0.74, overall: 121, recent: 6, gap: 11 },
+    { number: 12, score: 0.66, overall: 98, recent: 4, gap: 9 },
+    { number: 34, score: 0.59, overall: 87, recent: 3, gap: 19 },
+  ],
+  tickets: [
+    { numbers: [7, 12, 34, 1, 2, 4] },
+    { numbers: [7, 12, 5, 6, 8, 9] },
+    { numbers: [7, 34, 10, 11, 13, 14] },
+  ],
+});
+assert.equal(heroSignals.hottest.number, 7, "hero hot signal should favor numbers repeatedly selected in the current set");
+assert.equal(heroSignals.hottest.count, 3, "hero hot signal should expose how many current tickets captured the number");
+assert.equal(heroSignals.overdue.number, 34, "hero cold signal should come from the current set and prefer larger gaps");
+assert.notEqual(heroSignals.hottest.number, 3, "hero hot signal should not stay pinned to an unused global top number");
+
 const scannedTicket = app.extractTicketInfoFromText("https://m.dhlottery.co.kr/?v=1223q161820323339w010203040506");
 assert.equal(scannedTicket.round, 1223, "QR parser should extract the round from the ticket");
 assert.equal(scannedTicket.games.length, 2, "QR parser should extract all encoded games");
@@ -229,11 +247,15 @@ assert.match(appSource, /historySyncButton/, "app should render the manual updat
 assert.match(appSource, /renderScannedTicketResults/, "app should render scanned ticket result summaries");
 assert.match(appSource, /openTicketCheckModalBtn/, "app should wire the modal launch button");
 assert.match(appSource, /ticketCheckModal/, "app should manage the dedicated ticket check modal");
+assert.match(appSource, /pickHeroSignalNumbers/, "app should derive hero signals from the current generated set");
 assert.match(appSource, /scanFile\(file, true\)/, "app should support scanning uploaded QR images");
 assert.match(appSource, /setTicketCheckCameraAvailability/, "app should disable camera scanning in unsupported browsers");
 assert.match(appSource, /ticketCheckCameraUnavailable/, "app should remember unsupported camera environments during the session");
 assert.match(appSource, /카드를 눌러 패턴 지도를 확인해 보세요/, "generation feedback should describe inline pattern access");
+assert.match(appSource, /이번 세트 기준 실시간 갱신/, "hero signal card should explain that it reacts to the current set");
+assert.match(appSource, /이번 세트 .*장 · 누적/, "hero signal card should reflect current-set capture counts for hot signals");
 assert.doesNotMatch(appSource, /우측 패턴 지도를 확인해 보세요/, "generation feedback should no longer reference a missing right-side panel");
+assert.doesNotMatch(appSource, /시그널 감지 렌즈 동작/, "hero signal card should no longer use the static placeholder subtitle");
 assert.doesNotMatch(appSource, /setTimeout\(function \(\) \{\s*startTicketCheckScan\(\);/s, "modal should not auto-start camera on open");
 assert.match(healthHtml, /"status":"ok"/, "health endpoint should advertise an ok status");
 

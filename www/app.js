@@ -1118,6 +1118,97 @@
     }).slice(0, count);
   }
 
+  function pickHeroSignalNumbers(result) {
+    var countByNumber = createEmptyCounts();
+    var scoreTable = result && result.scoreTable ? result.scoreTable.slice() : [];
+    var hottestFallback = topItems(scoreTable, "overall", 1)[0] || null;
+    var overdueFallback = overdueItems(scoreTable, 1)[0] || null;
+
+    if (result && Array.isArray(result.tickets)) {
+      result.tickets.forEach(function (ticket) {
+        if (!ticket || !Array.isArray(ticket.numbers)) {
+          return;
+        }
+        ticket.numbers.forEach(function (number) {
+          countByNumber[number] += 1;
+        });
+      });
+    }
+
+    var ticketCandidates = scoreTable
+      .filter(function (item) {
+        return countByNumber[item.number] > 0;
+      })
+      .map(function (item) {
+        return {
+          number: item.number,
+          score: item.score,
+          overall: item.overall,
+          recent: item.recent,
+          gap: item.gap,
+          count: countByNumber[item.number],
+        };
+      });
+
+    var hottest = ticketCandidates.slice().sort(function (left, right) {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      if (right.recent !== left.recent) {
+        return right.recent - left.recent;
+      }
+      if (right.overall !== left.overall) {
+        return right.overall - left.overall;
+      }
+      return left.number - right.number;
+    })[0] || null;
+
+    var overdue = ticketCandidates.slice().sort(function (left, right) {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      if (right.gap !== left.gap) {
+        return right.gap - left.gap;
+      }
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      return left.number - right.number;
+    }).find(function (item) {
+      return !hottest || item.number !== hottest.number;
+    }) || null;
+
+    if (!hottest && hottestFallback) {
+      hottest = {
+        number: hottestFallback.number,
+        score: hottestFallback.score,
+        overall: hottestFallback.overall,
+        recent: hottestFallback.recent,
+        gap: hottestFallback.gap,
+        count: countByNumber[hottestFallback.number] || 0,
+      };
+    }
+
+    if (!overdue && overdueFallback) {
+      overdue = {
+        number: overdueFallback.number,
+        score: overdueFallback.score,
+        overall: overdueFallback.overall,
+        recent: overdueFallback.recent,
+        gap: overdueFallback.gap,
+        count: countByNumber[overdueFallback.number] || 0,
+      };
+    }
+
+    return {
+      hottest: hottest,
+      overdue: overdue,
+    };
+  }
+
   function pairItems(pairCounts, count) {
     return Array.from(pairCounts.entries()).sort(function (left, right) {
       if (right[1] !== left[1]) {
@@ -1277,8 +1368,9 @@
   }
 
   function renderHeroStats(result) {
-    var hottest = topItems(result.scoreTable, "overall", 1)[0];
-    var overdue = overdueItems(result.scoreTable, 1)[0];
+    var heroSignals = pickHeroSignalNumbers(result);
+    var hottest = heroSignals.hottest;
+    var overdue = heroSignals.overdue;
     var heroStats = document.getElementById("heroStats");
 
     if (!heroStats) {
@@ -1301,8 +1393,8 @@
       '</strong>회차까지의 누적 데이터 기반<br><strong style="color:var(--text);font-weight:700;">' +
       result.recentWindow +
       '</strong>회차 핫&콜드 구간 가중치 반영</div></article>' +
-      '<article class="hero-stat"><span class="hero-stat-label" style="display:inline-flex;align-items:center;gap:0.3rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> 주요 주목 (예상) 번호</span><span class="hero-stat-value" style="color:var(--accent);font-size:1.1rem;">시그널 감지 렌즈 동작</span><div style="margin-top:0.6rem;display:flex;gap:0.4rem;align-items:center;">' +
-      (hottest && overdue ? ballMarkup(hottest.number) + '<div style="display:flex;flex-direction:column;margin-right:0.6rem;"><span style="color:var(--text);font-size:0.85rem;font-weight:700;">강세 구간</span><span style="color:var(--muted);font-size:0.75rem;">+누적 ' + hottest.overall + '회</span></div><span style="border-left:1px solid rgba(255,255,255,0.1);height:1.8rem;margin:0 0.2rem;"></span>' + ballMarkup(overdue.number) + '<div style="display:flex;flex-direction:column;"><span style="color:var(--text);font-size:0.85rem;font-weight:700;">콜드 구간</span><span style="color:var(--muted);font-size:0.75rem;">'+ overdue.gap +'회 연속 미출현</span></div>' : '<span class="microcopy">추천 핵심 번호 계산 중</span>') +
+      '<article class="hero-stat"><span class="hero-stat-label" style="display:inline-flex;align-items:center;gap:0.3rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> 주요 주목 (예상) 번호</span><span class="hero-stat-value" style="color:var(--accent);font-size:1.1rem;">이번 세트 기준 실시간 갱신</span><div style="margin-top:0.6rem;display:flex;gap:0.4rem;align-items:center;">' +
+      (hottest && overdue ? ballMarkup(hottest.number) + '<div style="display:flex;flex-direction:column;margin-right:0.6rem;"><span style="color:var(--text);font-size:0.85rem;font-weight:700;">강세 구간</span><span style="color:var(--muted);font-size:0.75rem;">이번 세트 ' + hottest.count + '장 · 누적 ' + hottest.overall + '회</span></div><span style="border-left:1px solid rgba(255,255,255,0.1);height:1.8rem;margin:0 0.2rem;"></span>' + ballMarkup(overdue.number) + '<div style="display:flex;flex-direction:column;"><span style="color:var(--text);font-size:0.85rem;font-weight:700;">콜드 구간</span><span style="color:var(--muted);font-size:0.75rem;">이번 세트 ' + overdue.count + '장 · ' + overdue.gap + '회 공백</span></div>' : '<span class="microcopy">추천 핵심 번호 계산 중</span>') +
       "</div></article>";
   }
 
@@ -2383,6 +2475,7 @@
     extractTicketInfoFromText: extractTicketInfoFromText,
     evaluateScannedTicket: evaluateScannedTicket,
     getTicketResultPresentation: getTicketResultPresentation,
+    pickHeroSignalNumbers: pickHeroSignalNumbers,
     renderScannedTicketResults: renderScannedTicketResults,
     syncLatestHistory: syncLatestHistory,
     validateTicket: validateTicket,
