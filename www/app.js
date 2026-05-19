@@ -25,6 +25,8 @@
     ? "https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=" 
     : "/api/lotto/";
   var MAX_SYNC_ROUNDS = 20;
+  var SAVED_RECOMMENDATIONS_KEY = "lottoSavedRecommendations:v1";
+  var MAX_SAVED_RECOMMENDATIONS = 12;
   var appState = {
     history: Array.isArray(global.LOTTO_HISTORY) ? global.LOTTO_HISTORY.slice() : [],
     latestResult: null,
@@ -34,6 +36,7 @@
     poolNumberSet: new Set(),
     lastScannedTicketInfo: null,
     ticketCheckCameraUnavailable: false,
+    savedSelections: [],
   };
 
   function createRng(seed) {
@@ -241,6 +244,170 @@
         return left - right;
       }),
     };
+  }
+
+  function getStorage() {
+    try {
+      return global.localStorage || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function buildSavedRecommendationSignature(entry) {
+    var targetRound = entry && entry.targetRound ? Number(entry.targetRound) : 0;
+    var tickets = Array.isArray(entry && entry.tickets) ? entry.tickets : [];
+    return (
+      String(targetRound) +
+      ":" +
+      tickets
+        .map(function (ticket) {
+          return normalizeUniqueNumbers(ticket && ticket.numbers, 1, 45).join("-");
+        })
+        .join("|")
+    );
+  }
+
+  function normalizeSavedRecommendation(entry) {
+    if (!entry || typeof entry !== "object") {
+      return null;
+    }
+
+    var tickets = Array.isArray(entry.tickets)
+      ? entry.tickets
+          .map(function (ticket) {
+            var numbers = normalizeUniqueNumbers(ticket && ticket.numbers, 1, 45);
+            if (numbers.length !== 6) {
+              return null;
+            }
+            return {
+              numbers: numbers,
+              profile: ticket && ticket.profile ? String(ticket.profile) : "balanced",
+              meta: Array.isArray(ticket && ticket.meta)
+                ? ticket.meta.map(function (item) { return String(item); }).slice(0, 6)
+                : [],
+            };
+          })
+          .filter(Boolean)
+      : [];
+
+    if (!tickets.length) {
+      return null;
+    }
+
+    var targetRound = Number(entry.targetRound) || null;
+    if (!targetRound) {
+      return null;
+    }
+
+    return {
+      id: entry.id ? String(entry.id) : "saved-" + targetRound + "-" + buildSavedRecommendationSignature({ targetRound: targetRound, tickets: tickets }),
+      savedAt: entry.savedAt ? String(entry.savedAt) : new Date().toISOString(),
+      targetRound: targetRound,
+      sourceRound: Number(entry.sourceRound) || targetRound - 1,
+      profile: entry.profile ? String(entry.profile) : "balanced",
+      recentWindow: Number(entry.recentWindow) || 24,
+      ticketCount: tickets.length,
+      tickets: tickets,
+    };
+  }
+
+  function loadSavedRecommendations() {
+    var storage = getStorage();
+    var raw;
+
+    if (!storage) {
+      return [];
+    }
+
+    try {
+      raw = storage.getItem(SAVED_RECOMMENDATIONS_KEY);
+      if (!raw) {
+        return [];
+      }
+
+      return JSON.parse(raw)
+        .map(normalizeSavedRecommendation)
+        .filter(Boolean)
+        .sort(function (left, right) {
+          return new Date(right.savedAt).getTime() - new Date(left.savedAt).getTime();
+        });
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function persistSavedRecommendations(entries) {
+    var storage = getStorage();
+    if (!storage) {
+      return false;
+    }
+
+    try {
+      storage.setItem(
+        SAVED_RECOMMENDATIONS_KEY,
+        JSON.stringify(
+          (entries || [])
+            .map(normalizeSavedRecommendation)
+            .filter(Boolean)
+            .slice(0, MAX_SAVED_RECOMMENDATIONS),
+        ),
+      );
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function buildSavedRecommendation(result, history) {
+    var activeHistory = Array.isArray(history) && history.length ? history.slice() : getActiveHistory();
+    var latest = activeHistory.length ? activeHistory[activeHistory.length - 1] : null;
+    var normalizedTickets = result && Array.isArray(result.tickets)
+      ? result.tickets
+          .map(function (ticket) {
+            var numbers = normalizeUniqueNumbers(ticket && ticket.numbers, 1, 45);
+            if (numbers.length !== 6) {
+              return null;
+            }
+            return {
+              numbers: numbers,
+              profile: ticket.profile || result.profile || "balanced",
+              meta: Array.isArray(ticket.meta) ? ticket.meta.map(function (item) { return String(item); }).slice(0, 6) : [],
+            };
+          })
+          .filter(Boolean)
+      : [];
+
+    if (!latest || !normalizedTickets.length) {
+      return null;
+    }
+
+    return normalizeSavedRecommendation({
+      id: "saved-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+      savedAt: new Date().toISOString(),
+      targetRound: latest.round + 1,
+      sourceRound: latest.round,
+      profile: result.profile || "balanced",
+      recentWindow: Number(result.recentWindow) || 24,
+      ticketCount: normalizedTickets.length,
+      tickets: normalizedTickets,
+    });
+  }
+
+  function evaluateSavedRecommendation(savedRecommendation, history) {
+    if (!savedRecommendation) {
+      return evaluateScannedTicket({ round: null, games: [] }, history);
+    }
+
+    return evaluateScannedTicket(
+      {
+        round: savedRecommendation.targetRound,
+        games: savedRecommendation.tickets.map(function (ticket) {
+          return ticket.numbers.slice();
+        }),
+      },
+      history,
+    );
   }
 
   function getRankMeta(matchCount, bonusMatch) {
@@ -504,6 +671,122 @@
     }
 
     return matchedCopy;
+  }
+
+  function getPresentationBadgeClass(presentation) {
+    if (!presentation || !presentation.tone) {
+      return "is-pending";
+    }
+    if (presentation.tone.indexOf("rank-") === 0) {
+      return "is-rank-" + presentation.tone.replace("rank-", "");
+    }
+    if (presentation.tone === "miss") {
+      return "is-miss";
+    }
+    return "is-pending";
+  }
+
+  function formatSavedAtLabel(isoText) {
+    var date = new Date(isoText);
+    if (Number.isNaN(date.getTime())) {
+      return "저장 시각 없음";
+    }
+    return date.toLocaleString("ko-KR", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  }
+
+  function buildSavedRecommendationBallMarkup(number, game, draw) {
+    if (draw) {
+      return buildTicketResultBallMarkup(number, game, draw);
+    }
+
+    return ballMarkup(number, { className: "saved-pick-row__ball" });
+  }
+
+  function buildSavedRecommendationCard(savedRecommendation, history) {
+    var evaluation = evaluateSavedRecommendation(savedRecommendation, history);
+    var presentation = getTicketResultPresentation(evaluation);
+    var savedMeta = savedRecommendation.sourceRound
+      ? savedRecommendation.sourceRound + "회 데이터 기준 추천"
+      : "로컬 추천 세트";
+    var winningMarkup = evaluation.draw
+      ? (
+          '<div class="saved-pick-card__winning">' +
+          '<span class="saved-pick-card__winning-label">당첨번호</span>' +
+          buildWinningBallsMarkup(evaluation.draw) +
+          "</div>"
+        )
+      : "";
+
+    return (
+      '<article class="saved-pick-card" data-saved-id="' + escapeHtml(savedRecommendation.id) + '">' +
+      '<div class="saved-pick-card__header">' +
+      '<div>' +
+      '<p class="eyebrow">내가 픽한 추천</p>' +
+      '<h3>제' + savedRecommendation.targetRound + "회 추천 세트</h3>" +
+      '<p class="saved-pick-card__meta">' + escapeHtml(formatSavedAtLabel(savedRecommendation.savedAt)) + " 저장 · " + escapeHtml(savedMeta) + " · " + savedRecommendation.ticketCount + "줄</p>" +
+      "</div>" +
+      '<div class="saved-pick-card__actions">' +
+      '<span class="ticket-rank-badge ' + getPresentationBadgeClass(presentation) + '">' + escapeHtml(presentation.badge) + "</span>" +
+      '<button type="button" class="reset-button" data-delete-saved-id="' + escapeHtml(savedRecommendation.id) + '">삭제</button>' +
+      "</div>" +
+      "</div>" +
+      '<p class="saved-pick-card__summary">' + escapeHtml(presentation.copy) + "</p>" +
+      winningMarkup +
+      '<div class="saved-pick-card__rows">' +
+      evaluation.games
+        .map(function (game) {
+          return (
+            '<article class="saved-pick-row">' +
+            '<div class="saved-pick-row__game">' + game.letter + "</div>" +
+            '<div class="saved-pick-row__result">' +
+            '<span class="ticket-rank-badge ' + getTicketRankBadgeClass(game.rank) + '">' + escapeHtml(game.rank.label) + "</span>" +
+            '<p class="saved-pick-row__result-copy">' + escapeHtml(game.rank.summary) + "</p>" +
+            "</div>" +
+            '<div class="saved-pick-row__numbers">' +
+            '<div class="saved-pick-row__balls">' +
+            game.numbers.map(function (number) {
+              return buildSavedRecommendationBallMarkup(number, game, evaluation.draw);
+            }).join("") +
+            "</div>" +
+            '<p class="saved-pick-row__match">' + escapeHtml(buildTicketGameMatchCopy(game)) + "</p>" +
+            "</div>" +
+            "</article>"
+          );
+        })
+        .join("") +
+      "</div>" +
+      "</article>"
+    );
+  }
+
+  function renderSavedRecommendations() {
+    var target = document.getElementById("savedRecommendationsList");
+    var history = getActiveHistory();
+
+    if (!target) {
+      return;
+    }
+
+    if (!appState.savedSelections.length) {
+      target.innerHTML =
+        '<article class="saved-pick-empty">' +
+        "<strong>아직 저장한 추천 번호가 없습니다.</strong><br>" +
+        "이번 주 추천 세트를 만든 뒤 <strong>추천 번호 저장</strong>을 누르면 이 브라우저에 보관되고, 추첨 결과가 들어오면 여기서 바로 당첨 여부를 확인할 수 있습니다." +
+        "</article>";
+      return;
+    }
+
+    target.innerHTML = appState.savedSelections
+      .map(function (savedRecommendation) {
+        return buildSavedRecommendationCard(savedRecommendation, history);
+      })
+      .join("");
   }
 
   function clearScannedTicketResults() {
@@ -1691,6 +1974,7 @@
     renderTickets(result);
     renderAnalysis(result);
     renderScoreboard(result);
+    renderSavedRecommendations();
     return result;
   }
 
@@ -1841,6 +2125,8 @@
         renderScannedTicketResults(appState.lastScannedTicketInfo);
       }
 
+      renderSavedRecommendations();
+
       return syncedRounds;
     });
   }
@@ -1877,13 +2163,17 @@
     var ticketsGrid = document.getElementById("ticketsGrid");
     var historySyncButton = document.getElementById("historySyncButton");
     var unifiedGrid = document.getElementById("unifiedNumberGrid");
+    var saveRecommendationBtn = document.getElementById("saveRecommendationBtn");
+    var savedRecommendationsList = document.getElementById("savedRecommendationsList");
 
     if (!form) {
       return;
     }
 
+    appState.savedSelections = loadSavedRecommendations();
     renderFilterControls();
     updateFilterPreview();
+    renderSavedRecommendations();
     runApp(collectFormOptions());
     setSyncButtonState(false);
 
@@ -1917,7 +2207,85 @@
         runApp(collectFormOptions());
       });
     }
-    
+
+    if (saveRecommendationBtn) {
+      saveRecommendationBtn.addEventListener("click", function () {
+        var feedback = document.getElementById("resultsFeedback");
+        var storage = getStorage();
+        var currentResult = appState.latestResult;
+        var savedRecommendation;
+        var isDuplicate;
+
+        if (!storage) {
+          if (feedback) {
+            feedback.textContent = "현재 브라우저에서는 추천 번호 저장을 지원하지 않습니다.";
+          }
+          return;
+        }
+
+        if (!currentResult || !currentResult.tickets || !currentResult.tickets.length) {
+          if (feedback) {
+            feedback.textContent = "먼저 이번 주 추천 세트를 생성해 주세요.";
+          }
+          return;
+        }
+
+        savedRecommendation = buildSavedRecommendation(currentResult, getActiveHistory());
+        if (!savedRecommendation) {
+          if (feedback) {
+            feedback.textContent = "현재 추천 결과를 저장할 수 없습니다. 다시 생성 후 시도해 주세요.";
+          }
+          return;
+        }
+
+        isDuplicate = appState.savedSelections.some(function (entry) {
+          return buildSavedRecommendationSignature(entry) === buildSavedRecommendationSignature(savedRecommendation);
+        });
+
+        if (isDuplicate) {
+          if (feedback) {
+            feedback.textContent = "같은 추천 세트는 이미 저장되어 있습니다. 아래 저장한 추천 번호에서 확인해 주세요.";
+          }
+          return;
+        }
+
+        appState.savedSelections = [savedRecommendation].concat(appState.savedSelections).slice(0, MAX_SAVED_RECOMMENDATIONS);
+        persistSavedRecommendations(appState.savedSelections);
+        renderSavedRecommendations();
+
+        if (feedback) {
+          feedback.textContent = "제" + savedRecommendation.targetRound + "회 추천 세트가 이 브라우저에 저장되었습니다. 추첨 후 아래 저장한 추천 번호에서 자동 판정됩니다.";
+        }
+      });
+    }
+
+    if (savedRecommendationsList) {
+      savedRecommendationsList.addEventListener("click", function (event) {
+        var deleteBtn = event.target.closest("[data-delete-saved-id]");
+        var savedId;
+        var feedback = document.getElementById("resultsFeedback");
+
+        if (!deleteBtn) {
+          return;
+        }
+
+        savedId = deleteBtn.getAttribute("data-delete-saved-id");
+        if (!savedId) {
+          return;
+        }
+
+        appState.savedSelections = appState.savedSelections.filter(function (entry) {
+          return entry.id !== savedId;
+        });
+        persistSavedRecommendations(appState.savedSelections);
+        renderSavedRecommendations();
+
+        if (feedback) {
+          feedback.textContent = "저장한 추천 번호를 삭제했습니다.";
+        }
+      });
+    }
+
     var profileEl = document.getElementById("profile");
     var poolPanel = document.getElementById("poolPanel");
     if (profileEl && poolPanel) {
@@ -2467,8 +2835,11 @@
   var api = {
     analyzeHistory: analyzeHistory,
     buildFilterState: buildFilterState,
+    buildSavedRecommendation: buildSavedRecommendation,
     buildScoreTable: buildScoreTable,
+    evaluateSavedRecommendation: evaluateSavedRecommendation,
     generateRecommendations: generateRecommendations,
+    loadSavedRecommendations: loadSavedRecommendations,
     mergeLatestOverride: mergeLatestOverride,
     normalizeDraw: normalizeDraw,
     parseLottoDrawPayload: parseLottoDrawPayload,

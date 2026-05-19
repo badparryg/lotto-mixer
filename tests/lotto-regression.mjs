@@ -28,6 +28,18 @@ const appSandbox = {
     LOTTO_HISTORY: history,
     LOTTO_LATEST_OVERRIDE: latestOverride,
     location: { protocol: "file:" },
+    localStorage: {
+      _store: {},
+      getItem(key) {
+        return Object.prototype.hasOwnProperty.call(this._store, key) ? this._store[key] : null;
+      },
+      setItem(key, value) {
+        this._store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this._store[key];
+      },
+    },
   },
 };
 
@@ -228,6 +240,27 @@ const missedTicket = app.evaluateScannedTicket(
 );
 assert.equal(app.getTicketResultPresentation(missedTicket).tone, "miss", "non-winning tickets should render as misses");
 
+const savedRecommendation = app.buildSavedRecommendation(result, history);
+assert.equal(savedRecommendation.targetRound, history.at(-1).round + 1, "saved recommendation should target the next draw round");
+assert.equal(savedRecommendation.tickets.length, 5, "saved recommendation should preserve all generated rows");
+assert.equal(
+  app.evaluateSavedRecommendation(savedRecommendation, history).status,
+  "pending",
+  "saved recommendations should stay pending until the target round exists",
+);
+
+appSandbox.window.localStorage.setItem(
+  "lottoSavedRecommendations:v1",
+  JSON.stringify([savedRecommendation]),
+);
+const loadedSaved = app.loadSavedRecommendations();
+assert.equal(loadedSaved.length, 1, "saved recommendations should reload from localStorage");
+assert.deepEqual(
+  Array.from(loadedSaved[0].tickets[0].numbers),
+  Array.from(savedRecommendation.tickets[0].numbers),
+  "saved recommendations should preserve stored ticket numbers",
+);
+
 const html = fs.readFileSync(path.join(webRoot, "index.html"), "utf8");
 const healthHtml = fs.readFileSync(path.join(webRoot, "health/index.html"), "utf8");
 assert.match(html, /data\/lotto-history\.js/, "index should load bundled history data");
@@ -239,6 +272,8 @@ assert.match(html, /ticketCheckModal/, "index should render the dedicated ticket
 assert.match(html, /openTicketCheckModalBtn/, "index should render the bottom ticket check launch button");
 assert.match(html, /ticketCheckUploadBtn/, "index should expose the desktop upload fallback");
 assert.match(html, /ticketCheckRows/, "index should render the ticket result rows container");
+assert.match(html, /saveRecommendationBtn/, "index should render the save recommendation action");
+assert.match(html, /savedRecommendationsList/, "index should render the saved recommendations section");
 assert.doesNotMatch(html, /ticketCheckQuickButton/, "header quick button should be removed");
 assert.doesNotMatch(html, /QR 스캔 믹스형 \+ 당첨확인/, "pool mix profile should no longer include ticket checking");
 assert.match(html, /historySyncStatus/, "index should render history sync status");
@@ -251,6 +286,9 @@ assert.match(appSource, /pickHeroSignalNumbers/, "app should derive hero signals
 assert.match(appSource, /scanFile\(file, true\)/, "app should support scanning uploaded QR images");
 assert.match(appSource, /setTicketCheckCameraAvailability/, "app should disable camera scanning in unsupported browsers");
 assert.match(appSource, /ticketCheckCameraUnavailable/, "app should remember unsupported camera environments during the session");
+assert.match(appSource, /SAVED_RECOMMENDATIONS_KEY/, "app should define a saved recommendation storage key");
+assert.match(appSource, /buildSavedRecommendation/, "app should build savable recommendation bundles");
+assert.match(appSource, /renderSavedRecommendations/, "app should render saved recommendation cards");
 assert.match(appSource, /카드를 눌러 패턴 지도를 확인해 보세요/, "generation feedback should describe inline pattern access");
 assert.match(appSource, /이번 세트 기준 실시간 갱신/, "hero signal card should explain that it reacts to the current set");
 assert.match(appSource, /이번 세트 .*장 · 누적/, "hero signal card should reflect current-set capture counts for hot signals");

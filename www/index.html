@@ -160,15 +160,20 @@
         <section id="resultsPanel" class="results-layout glass-panel">
           <div class="tickets-column">
             <div class="section-head">
-              <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+              <div class="section-head__row">
                 <div>
                   <p class="eyebrow">새로운 조합</p>
                   <h2 style="margin: 0;">이번 주 추천 세트</h2>
                 </div>
-                <button type="button" id="refreshTicketsBtn" class="reset-button" title="현재 조건으로 세트 다시 생성하기">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
-                  다시 생성
-                </button>
+                <div class="section-actions">
+                  <button type="button" id="saveRecommendationBtn" class="secondary-button action-button save-recommendation-button" title="현재 추천 세트를 이 브라우저에 저장하기">
+                    추천 번호 저장
+                  </button>
+                  <button type="button" id="refreshTicketsBtn" class="reset-button" title="현재 조건으로 세트 다시 생성하기">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                    다시 생성
+                  </button>
+                </div>
               </div>
               <p id="generationMeta" class="section-note" style="margin-top: 0.6rem;"></p>
             </div>
@@ -190,6 +195,19 @@
             </div>
             <div id="patternBoard" class="pattern-board heatmap-board"></div>
           </aside>
+        </section>
+
+        <section id="savedRecommendationsPanel" class="glass-panel saved-picks-panel">
+          <div class="section-head">
+            <div class="section-head__row">
+              <div>
+                <p class="eyebrow">내가 저장한 번호</p>
+                <h2 style="margin: 0;">저장한 추천 번호</h2>
+              </div>
+            </div>
+            <p class="section-note">지금은 로그인 없이 이 브라우저에만 저장됩니다. 다른 기기와 동기화하는 계정 기능은 나중에 이어서 붙일 수 있습니다.</p>
+          </div>
+          <div id="savedRecommendationsList" class="saved-picks-list"></div>
         </section>
 
         <div class="dashboard-bottom-row">
