@@ -1302,6 +1302,49 @@ body.ticket-check-modal-open {
   grid-column: 1 / -1;
 }
 
+#inlinePatternTarget {
+  width: min(100%, 440px);
+  max-width: 440px;
+  margin-top: 0.75rem !important;
+  padding-top: 0.75rem !important;
+}
+
+#inlinePatternTarget .pattern-panel {
+  width: 100%;
+  max-width: 440px;
+}
+
+#inlinePatternTarget .pattern-panel-head {
+  gap: 0.35rem;
+}
+
+#inlinePatternTarget .pattern-panel-head h3 {
+  font-size: 1.05rem;
+}
+
+#inlinePatternTarget .heatmap-legend {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+}
+
+#patternBoard.pattern-board {
+  --compact-pattern-cell: clamp(30px, 7.8vw, 42px);
+  width: max-content;
+  max-width: 100%;
+  grid-template-columns: repeat(9, var(--compact-pattern-cell));
+  gap: 0.22rem;
+  margin-top: 0.6rem;
+  overflow-x: auto;
+}
+
+#patternBoard .pattern-cell {
+  width: var(--compact-pattern-cell);
+  height: var(--compact-pattern-cell);
+  aspect-ratio: auto;
+  border-radius: 7px;
+  font-size: 0.68rem;
+}
+
 .ticket-card::after {
   content: "";
   position: absolute;
