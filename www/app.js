@@ -1277,6 +1277,181 @@
     });
   }
 
+  function forEachPair(numbers, callback) {
+    for (var left = 0; left < numbers.length; left += 1) {
+      for (var right = left + 1; right < numbers.length; right += 1) {
+        callback(numbers[left], numbers[right]);
+      }
+    }
+  }
+
+  function forEachTriple(numbers, callback) {
+    for (var first = 0; first < numbers.length; first += 1) {
+      for (var second = first + 1; second < numbers.length; second += 1) {
+        for (var third = second + 1; third < numbers.length; third += 1) {
+          callback(numbers[first], numbers[second], numbers[third]);
+        }
+      }
+    }
+  }
+
+  function tripleKey(first, second, third) {
+    return [first, second, third].sort(function (left, right) {
+      return left - right;
+    }).join("-");
+  }
+
+  function countSharedFlexibleNumbers(leftNumbers, rightNumbers, fixedSet) {
+    var rightSet = new Set(rightNumbers);
+    return leftNumbers.filter(function (number) {
+      return rightSet.has(number) && !(fixedSet && fixedSet.has(number));
+    }).length;
+  }
+
+  function getGridRow(number) {
+    return Math.ceil(number / GRID_COLUMN_COUNT);
+  }
+
+  function getGridColumn(number) {
+    return ((number - 1) % GRID_COLUMN_COUNT) + 1;
+  }
+
+  function getMaxCount(values) {
+    var counts = {};
+    var max = 0;
+    values.forEach(function (value) {
+      counts[value] = (counts[value] || 0) + 1;
+      max = Math.max(max, counts[value]);
+    });
+    return max;
+  }
+
+  function countAdjacentPairs(numbers) {
+    var sorted = numbers.slice().sort(function (left, right) {
+      return left - right;
+    });
+    var count = 0;
+    for (var index = 1; index < sorted.length; index += 1) {
+      if (sorted[index] === sorted[index - 1] + 1) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  function getPublicPatternPenalty(numbers) {
+    var dateRangeCount = numbers.filter(function (number) {
+      return number <= 31;
+    }).length;
+    var maxRow = getMaxCount(numbers.map(getGridRow));
+    var maxColumn = getMaxCount(numbers.map(getGridColumn));
+    var penalty = 0;
+
+    penalty += Math.max(0, dateRangeCount - 4) * 0.22;
+    if (dateRangeCount === 6) {
+      penalty += 0.42;
+    }
+    penalty += Math.max(0, maxRow - 3) * 0.24;
+    penalty += Math.max(0, maxColumn - 2) * 0.18;
+    penalty += countAdjacentPairs(numbers) * 0.08;
+
+    return penalty;
+  }
+
+  function getTicketBaseQuality(ticket, scoreMap) {
+    var total = ticket.numbers.reduce(function (sum, number) {
+      return sum + ((scoreMap[number] && scoreMap[number].score) || 0.01);
+    }, 0);
+    return total / ticket.numbers.length - getPublicPatternPenalty(ticket.numbers) * 0.18;
+  }
+
+  function getPortfolioPenalty(ticket, selectedTickets, usageState, filterState) {
+    var fixedSet = filterState && filterState.includedSet ? filterState.includedSet : new Set();
+    var penalty = getPublicPatternPenalty(ticket.numbers) * 0.36;
+
+    ticket.numbers.forEach(function (number) {
+      if (fixedSet.has(number)) {
+        return;
+      }
+      var usage = usageState.numberUsage[number] || 0;
+      penalty += usage * 0.2 + usage * usage * 0.06;
+    });
+
+    selectedTickets.forEach(function (selected) {
+      var overlap = countSharedFlexibleNumbers(ticket.numbers, selected.numbers, fixedSet);
+      penalty += overlap * 0.12 + Math.max(0, overlap - 1) * 0.85 + Math.max(0, overlap - 2) * 1.8;
+    });
+
+    forEachPair(ticket.numbers, function (left, right) {
+      if (fixedSet.has(left) && fixedSet.has(right)) {
+        return;
+      }
+      penalty += (usageState.pairUsage.get(pairKey(left, right)) || 0) * 0.82;
+    });
+
+    forEachTriple(ticket.numbers, function (first, second, third) {
+      if (fixedSet.has(first) && fixedSet.has(second) && fixedSet.has(third)) {
+        return;
+      }
+      penalty += (usageState.tripleUsage.get(tripleKey(first, second, third)) || 0) * 2.35;
+    });
+
+    return penalty;
+  }
+
+  function addTicketToUsage(ticket, usageState, filterState) {
+    var fixedSet = filterState && filterState.includedSet ? filterState.includedSet : new Set();
+
+    ticket.numbers.forEach(function (number) {
+      if (!fixedSet.has(number)) {
+        usageState.numberUsage[number] = (usageState.numberUsage[number] || 0) + 1;
+      }
+    });
+
+    forEachPair(ticket.numbers, function (left, right) {
+      if (!(fixedSet.has(left) && fixedSet.has(right))) {
+        var key = pairKey(left, right);
+        usageState.pairUsage.set(key, (usageState.pairUsage.get(key) || 0) + 1);
+      }
+    });
+
+    forEachTriple(ticket.numbers, function (first, second, third) {
+      if (!(fixedSet.has(first) && fixedSet.has(second) && fixedSet.has(third))) {
+        var key = tripleKey(first, second, third);
+        usageState.tripleUsage.set(key, (usageState.tripleUsage.get(key) || 0) + 1);
+      }
+    });
+  }
+
+  function selectPortfolioTickets(candidates, ticketCount, scoreMap, filterState) {
+    var remaining = candidates.slice();
+    var selected = [];
+    var usageState = {
+      numberUsage: {},
+      pairUsage: new Map(),
+      tripleUsage: new Map(),
+    };
+
+    while (selected.length < ticketCount && remaining.length) {
+      var bestIndex = 0;
+      var bestScore = -Infinity;
+
+      remaining.forEach(function (ticket, index) {
+        var score = getTicketBaseQuality(ticket, scoreMap) - getPortfolioPenalty(ticket, selected, usageState, filterState);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = index;
+        }
+      });
+
+      var picked = remaining.splice(bestIndex, 1)[0];
+      selected.push(picked);
+      addTicketToUsage(picked, usageState, filterState);
+    }
+
+    return selected;
+  }
+
   function buildTicketMeta(numbers, stats, filterState) {
     var oddCount = numbers.filter(function (number) {
       return number % 2 !== 0;
@@ -1312,9 +1487,15 @@
     });
     var scoreMap = {};
     var tickets = [];
+    var portfolioCandidates = [];
+    var shouldOptimizePortfolio = (profile === "random" || profile === "pool_mix") && ticketCount > 1;
+    var portfolioCandidateLimit = shouldOptimizePortfolio
+      ? Math.min(600, Math.max(ticketCount * 6, ticketCount + 25))
+      : ticketCount;
     var seen = new Set();
     var attempts = 0;
     var maxAttempts = 8000;
+    var seedSalt = options && Number.isFinite(Number(options.seed)) ? Number(options.seed) : Date.now();
     var rng = createRng(
       stats.latestRound * 997 +
         ticketCount * 53 +
@@ -1322,7 +1503,7 @@
         profile.length * 101 +
         filterState.excludedCount * 17 +
         sumNumbers(filterState.includedNumbers) * 7 +
-        Date.now(),
+        seedSalt,
     );
 
     if (profile === "pool_mix") {
@@ -1342,7 +1523,10 @@
       scoreMap[item.number] = item;
     });
 
-    while (tickets.length < ticketCount && attempts < maxAttempts) {
+    while (
+      (shouldOptimizePortfolio ? portfolioCandidates.length < portfolioCandidateLimit : tickets.length < ticketCount) &&
+      attempts < maxAttempts
+    ) {
       attempts += 1;
       var currentProfile = profile === "random" || profile === "pool_mix" ? ["balanced", "trend", "contrarian"][Math.floor(rng() * 3)] : profile;
       var currentScoreMap = scoreMap;
@@ -1365,11 +1549,21 @@
       }
 
       seen.add(key);
-      tickets.push({
+      var ticket = {
         profile: currentProfile,
         numbers: numbers,
         meta: buildTicketMeta(numbers, stats, filterState).concat(filterState.excludedCount ? ["제외 반영 " + filterState.excludedCount] : []),
-      });
+      };
+
+      if (shouldOptimizePortfolio) {
+        portfolioCandidates.push(ticket);
+      } else {
+        tickets.push(ticket);
+      }
+    }
+
+    if (shouldOptimizePortfolio) {
+      tickets = selectPortfolioTickets(portfolioCandidates, ticketCount, scoreMap, filterState);
     }
 
     return {

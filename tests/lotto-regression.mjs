@@ -111,6 +111,57 @@ result.tickets.forEach((ticket, index) => {
   );
 });
 
+function getMaxSharedNumberCount(tickets) {
+  let maxShared = 0;
+  for (let left = 0; left < tickets.length; left += 1) {
+    const leftSet = new Set(tickets[left].numbers);
+    for (let right = left + 1; right < tickets.length; right += 1) {
+      maxShared = Math.max(
+        maxShared,
+        tickets[right].numbers.filter((number) => leftSet.has(number)).length,
+      );
+    }
+  }
+  return maxShared;
+}
+
+function getMaxPairRepeatCount(tickets) {
+  const pairCounts = new Map();
+  tickets.forEach((ticket) => {
+    for (let left = 0; left < ticket.numbers.length; left += 1) {
+      for (let right = left + 1; right < ticket.numbers.length; right += 1) {
+        const key = `${ticket.numbers[left]}-${ticket.numbers[right]}`;
+        pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
+      }
+    }
+  });
+  return Math.max(0, ...pairCounts.values());
+}
+
+const autoMixPortfolio = app.generateRecommendations(history, {
+  profile: "random",
+  ticketCount: 12,
+  recentWindow: 24,
+  seed: 20260526,
+});
+
+assert.equal(autoMixPortfolio.error, "", "auto mix portfolio generation should succeed");
+assert.equal(autoMixPortfolio.tickets.length, 12, "auto mix should preserve requested ticket count");
+autoMixPortfolio.tickets.forEach((ticket, index) => {
+  assert.ok(
+    app.validateTicket(ticket.numbers, autoMixPortfolio.stats, ticket.profile, autoMixPortfolio.filterState),
+    `auto mix portfolio ticket ${index + 1} should satisfy its profile constraints`,
+  );
+});
+assert.ok(
+  getMaxSharedNumberCount(autoMixPortfolio.tickets) <= 2,
+  "auto mix portfolio should avoid near-duplicate tickets",
+);
+assert.ok(
+  getMaxPairRepeatCount(autoMixPortfolio.tickets) <= 2,
+  "auto mix portfolio should limit repeated number pairs across the bundle",
+);
+
 const filtered = app.generateRecommendations(history, {
   profile: "balanced",
   ticketCount: 3,
@@ -297,6 +348,8 @@ assert.match(appSource, /activePatternSource/, "app should track whether a ticke
 assert.match(appSource, /data-pattern-source="latest"/, "latest draw card should expose a clickable pattern source");
 assert.match(appSource, /latestPatternTarget/, "latest draw card should host the inline pattern board");
 assert.match(appSource, /회 당첨번호 패턴 분석/, "latest draw pattern title should identify the draw round");
+assert.match(appSource, /selectPortfolioTickets/, "auto mix should select final rows as a diversified portfolio");
+assert.match(appSource, /portfolioCandidates/, "auto mix should sample extra candidates before choosing the final bundle");
 assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*--pattern-cell-size: clamp/s, "inline pattern board cells should have a responsive size cap");
 assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*grid-template-columns: repeat\(7, var\(--pattern-cell-size\)\)/s, "pattern board should preserve the original seven-column number layout");
 assert.match(styles, /#patternBoard \.pattern-cell\s*\{[^}]*width: var\(--pattern-cell-size\)/s, "pattern board cells should not stretch to fill wide cards");
