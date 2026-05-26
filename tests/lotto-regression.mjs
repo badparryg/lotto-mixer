@@ -262,6 +262,7 @@ assert.deepEqual(
 );
 
 const html = fs.readFileSync(path.join(webRoot, "index.html"), "utf8");
+const styles = fs.readFileSync(path.join(webRoot, "styles.css"), "utf8");
 const healthHtml = fs.readFileSync(path.join(webRoot, "health/index.html"), "utf8");
 assert.match(html, /data\/lotto-history\.js/, "index should load bundled history data");
 assert.match(html, /data\/latest-draw\.js/, "index should load latest draw override data");
@@ -292,6 +293,13 @@ assert.match(appSource, /renderSavedRecommendations/, "app should render saved r
 assert.match(appSource, /카드를 눌러 패턴 지도를 확인해 보세요/, "generation feedback should describe inline pattern access");
 assert.match(appSource, /이번 세트 기준 실시간 갱신/, "hero signal card should explain that it reacts to the current set");
 assert.match(appSource, /이번 세트 .*장 · 누적/, "hero signal card should reflect current-set capture counts for hot signals");
+assert.match(appSource, /activePatternSource/, "app should track whether a ticket or latest draw owns the pattern board");
+assert.match(appSource, /data-pattern-source="latest"/, "latest draw card should expose a clickable pattern source");
+assert.match(appSource, /latestPatternTarget/, "latest draw card should host the inline pattern board");
+assert.match(appSource, /회 당첨번호 패턴 분석/, "latest draw pattern title should identify the draw round");
+assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/s, "pattern board should preserve the original seven-column number layout");
+assert.match(styles, /\.ticket-card \.ball-row\s*\{[^}]*flex-wrap: wrap/s, "ticket cards should wrap balls instead of overflowing the card edge");
+assert.match(styles, /\.ticket-card \.ball\s*\{[^}]*clamp/s, "ticket balls should scale inside narrow cards");
 assert.doesNotMatch(appSource, /우측 패턴 지도를 확인해 보세요/, "generation feedback should no longer reference a missing right-side panel");
 assert.doesNotMatch(appSource, /시그널 감지 렌즈 동작/, "hero signal card should no longer use the static placeholder subtitle");
 assert.doesNotMatch(appSource, /setTimeout\(function \(\) \{\s*startTicketCheckScan\(\);/s, "modal should not auto-start camera on open");

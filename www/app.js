@@ -31,6 +31,7 @@
     history: Array.isArray(global.LOTTO_HISTORY) ? global.LOTTO_HISTORY.slice() : [],
     latestResult: null,
     activeTicketIndex: -1,
+    activePatternSource: null,
     isSyncing: false,
     filterStateMap: {},
     poolNumberSet: new Set(),
@@ -1650,19 +1651,38 @@
     return filterState;
   }
 
+  function detachPatternPanel() {
+    if (typeof document === "undefined" || !document.body) {
+      return null;
+    }
+
+    var sourcePattern = document.getElementById("patternPanel");
+    if (sourcePattern) {
+      sourcePattern.style.display = "none";
+      document.body.appendChild(sourcePattern);
+    }
+
+    return sourcePattern;
+  }
+
   function renderHeroStats(result) {
     var heroSignals = pickHeroSignalNumbers(result);
     var hottest = heroSignals.hottest;
     var overdue = heroSignals.overdue;
     var heroStats = document.getElementById("heroStats");
+    var latestActive = appState.activePatternSource === "latest";
+    var latestPatternContainer = latestActive
+      ? '<div id="latestPatternTarget" class="latest-pattern-target" onclick="event.stopPropagation();"></div>'
+      : "";
 
     if (!heroStats) {
       return;
     }
 
+    detachPatternPanel();
+
     heroStats.innerHTML =
-    heroStats.innerHTML =
-      '<article class="hero-stat"><div style="display:flex;align-items:center;margin-bottom:0.3rem;"><span class="hero-stat-label" style="display:inline-flex;align-items:center;gap:0.3rem;margin:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg> 최신 당첨 회차</span><button type="button" id="historySyncButton" class="history-sync-icon" title="최신 회차 가져오기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button></div><span class="hero-stat-value" style="display:block;">' +
+      '<article class="hero-stat hero-stat--clickable' + (latestActive ? ' is-active' : '') + '" data-pattern-source="latest" role="button" tabindex="0" aria-expanded="' + (latestActive ? "true" : "false") + '"><div style="display:flex;align-items:center;margin-bottom:0.3rem;"><span class="hero-stat-label" style="display:inline-flex;align-items:center;gap:0.3rem;margin:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg> 최신 당첨 회차</span><button type="button" id="historySyncButton" class="history-sync-icon" title="최신 회차 가져오기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button></div><span class="hero-stat-value" style="display:block;">' +
       result.stats.latestRound +
       "회 / " +
       escapeHtml(result.stats.latest.date) +
@@ -1670,7 +1690,7 @@
       result.stats.latest.numbers.map(function (number) { return ballMarkup(number); }).join("") +
       '<span style="display:inline-flex;color:var(--muted);align-items:center;">+</span>' +
       ballMarkup(result.stats.latest.bonus) +
-      '</div></article>' +
+      '</div>' + latestPatternContainer + '</article>' +
       '<article class="hero-stat"><span class="hero-stat-label" style="display:inline-flex;align-items:center;gap:0.3rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 추세 분석 데이터 범위</span><span class="hero-stat-value" style="color:var(--mint);font-size:1.1rem;">로컬 데이터 베이스 가동 중</span><div style="margin-top:0.45rem;line-height:1.6;font-size:0.92rem;color:var(--muted);"><strong style="color:var(--text);font-weight:700;">' +
       result.stats.latestRound +
       '</strong>회차까지의 누적 데이터 기반<br><strong style="color:var(--text);font-weight:700;">' +
@@ -1681,19 +1701,20 @@
       "</div></article>";
   }
 
-  function renderPatternPanel(result, ticketIndex) {
+  function renderPatternPanel(result, ticketIndex, patternSource) {
     var title = document.getElementById("patternTitle");
     var board = document.getElementById("patternBoard");
     var legend = document.getElementById("heatmapLegend");
     var summary = document.getElementById("patternSummary");
+    var isLatestPattern = patternSource === "latest";
 
     if (!title || !board) {
       return;
     }
 
-    var activeIndex = clampTicketIndex(ticketIndex, result);
+    var activeIndex = isLatestPattern ? -1 : clampTicketIndex(ticketIndex, result);
     
-    if (!result || !result.tickets.length || activeIndex < 0) {
+    if (!result || (!isLatestPattern && (!result.tickets.length || activeIndex < 0)) || (isLatestPattern && (!result.stats || !result.stats.latest))) {
       title.textContent = "아래 번호를 눌러주세요";
       if (summary) summary.style.display = "none";
       if (legend) legend.style.display = "none";
@@ -1703,20 +1724,21 @@
       return;
     }
 
-    var activeIndex = clampTicketIndex(ticketIndex, result);
-    var ticket = result.tickets[activeIndex];
+    var ticket = isLatestPattern ? { numbers: result.stats.latest.numbers.slice() } : result.tickets[activeIndex];
     var selectedSet = new Set(ticket.numbers);
-    var total = sumNumbers(ticket.numbers);
-    var oddCount = ticket.numbers.filter(function (number) { return number % 2 !== 0; }).length;
 
     var maxRecent = 0;
+    var recentByNumber = {};
     if (result.scoreTable) {
-      Object.keys(result.scoreTable).forEach(function(num) {
-        if (result.scoreTable[num].recent > maxRecent) maxRecent = result.scoreTable[num].recent;
+      result.scoreTable.forEach(function(item) {
+        recentByNumber[item.number] = item.recent;
+        if (item.recent > maxRecent) maxRecent = item.recent;
       });
     }
 
-    title.textContent = String(activeIndex + 1).padStart(2, "0") + "번 세트 패턴 분석";
+    title.textContent = isLatestPattern
+      ? result.stats.latestRound + "회 당첨번호 패턴 분석"
+      : String(activeIndex + 1).padStart(2, "0") + "번 세트 패턴 분석";
     if (summary) summary.style.display = "none";
     if (legend) legend.style.display = "flex";
     
@@ -1724,13 +1746,13 @@
       var classNames = ["pattern-cell"];
       var style = "";
       var isSelected = selectedSet.has(number);
-      var isFixed = result.filterState.includedSet.has(number);
+      var isFixed = result.filterState && result.filterState.includedSet && result.filterState.includedSet.has(number);
 
       if (isSelected) classNames.push("is-selected");
       if (isFixed) classNames.push("is-fixed");
 
       if (maxRecent > 0) {
-        var recentCount = result.scoreTable[number] ? result.scoreTable[number].recent : 0;
+        var recentCount = recentByNumber[number] || 0;
         var ratio = recentCount / maxRecent; 
         if (ratio > 0) {
           var bgAlpha = isSelected ? ratio * 0.9 : ratio * 0.5;
@@ -1749,13 +1771,10 @@
     var feedback = document.getElementById("resultsFeedback");
     var filterSummary = formatFilterSummary(result.filterState);
     var includeSummary = formatIncludeSummary(result.filterState);
-    var activeIndex = clampTicketIndex(appState.activeTicketIndex, result);
+    var activeIndex = appState.activePatternSource === "ticket" ? clampTicketIndex(appState.activeTicketIndex, result) : -1;
+    var patternSource = appState.activePatternSource === "latest" ? "latest" : appState.activePatternSource === "ticket" ? "ticket" : null;
 
-    var sourcePattern = document.getElementById("patternPanel");
-    if (sourcePattern) {
-      sourcePattern.style.display = "none";
-      document.body.appendChild(sourcePattern);
-    }
+    var sourcePattern = detachPatternPanel();
 
     if (generationMeta) {
       generationMeta.textContent = PROFILE_COPY[result.profile] + " / 최근 " + result.recentWindow + "회 특별 반영 / " + includeSummary + " / " + filterSummary;
@@ -1769,7 +1788,7 @@
     }
     if (!result.tickets.length) {
       target.innerHTML = '<article class="ticket-card ticket-card-empty"><div class="ticket-head"><span class="ticket-index">!</span><span class="ticket-mode">조건 조정 필요</span></div><p>' + escapeHtml(result.error || "현재 조건으로는 유효한 조합을 만들 수 없습니다.") + '</p><div class="ticket-meta"><span class="pill">' + escapeHtml(filterSummary) + "</span></div></article>";
-      renderPatternPanel(result, activeIndex);
+      renderPatternPanel(result, -1, null);
       return;
     }
 
@@ -1789,9 +1808,9 @@
         "</span>" + inlineContainer + "</div>";
     }).join("");
 
-    renderPatternPanel(result, activeIndex);
+    renderPatternPanel(result, patternSource === "latest" ? -1 : activeIndex, patternSource);
 
-    var targetPattern = document.getElementById("inlinePatternTarget");
+    var targetPattern = document.getElementById(patternSource === "latest" ? "latestPatternTarget" : "inlinePatternTarget");
     if (targetPattern && sourcePattern) {
       targetPattern.appendChild(sourcePattern);
       sourcePattern.style.display = "block";
@@ -2004,11 +2023,39 @@
       return;
     }
     var clickedIndex = Number(card.getAttribute("data-ticket-index")) || 0;
-    if (appState.activeTicketIndex === clickedIndex) {
+    if (appState.activePatternSource === "ticket" && appState.activeTicketIndex === clickedIndex) {
       appState.activeTicketIndex = -1;
+      appState.activePatternSource = null;
     } else {
       appState.activeTicketIndex = clickedIndex;
+      appState.activePatternSource = "ticket";
     }
+    renderHeroStats(appState.latestResult);
+    renderTickets(appState.latestResult);
+  }
+
+  function handleHeroPatternSelection(event) {
+    var card = event.target.closest('[data-pattern-source="latest"]');
+    var isKeyboardEvent = event.type === "keydown";
+
+    if (!card || !appState.latestResult || event.target.closest("button")) {
+      return;
+    }
+    if (isKeyboardEvent && event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    if (isKeyboardEvent) {
+      event.preventDefault();
+    }
+
+    if (appState.activePatternSource === "latest") {
+      appState.activePatternSource = null;
+    } else {
+      appState.activePatternSource = "latest";
+      appState.activeTicketIndex = -1;
+    }
+
+    renderHeroStats(appState.latestResult);
     renderTickets(appState.latestResult);
   }
 
@@ -2143,6 +2190,7 @@
       .then(function (syncedRounds) {
         if (syncedRounds) {
           appState.activeTicketIndex = -1;
+          appState.activePatternSource = null;
           runApp(collectFormOptions());
         }
         return syncedRounds;
@@ -2161,6 +2209,7 @@
   function initDom() {
     var form = document.getElementById("generatorForm");
     var ticketsGrid = document.getElementById("ticketsGrid");
+    var heroStats = document.getElementById("heroStats");
     var historySyncButton = document.getElementById("historySyncButton");
     var unifiedGrid = document.getElementById("unifiedNumberGrid");
     var saveRecommendationBtn = document.getElementById("saveRecommendationBtn");
@@ -2793,6 +2842,11 @@
       ticketsGrid.addEventListener("click", handleTicketSelection);
     }
 
+    if (heroStats) {
+      heroStats.addEventListener("click", handleHeroPatternSelection);
+      heroStats.addEventListener("keydown", handleHeroPatternSelection);
+    }
+
     document.body.addEventListener("click", function (e) {
       if (e.target.closest("#historySyncButton") || e.target.id === "historySyncButton") {
         handleHistorySyncRequest(false);
@@ -2814,6 +2868,7 @@
       }
 
       appState.activeTicketIndex = -1;
+      appState.activePatternSource = null;
       runApp(collectFormOptions());
 
       if (ticketsGrid) {
