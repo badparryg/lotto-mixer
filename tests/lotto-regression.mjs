@@ -297,7 +297,9 @@ assert.match(appSource, /activePatternSource/, "app should track whether a ticke
 assert.match(appSource, /data-pattern-source="latest"/, "latest draw card should expose a clickable pattern source");
 assert.match(appSource, /latestPatternTarget/, "latest draw card should host the inline pattern board");
 assert.match(appSource, /회 당첨번호 패턴 분석/, "latest draw pattern title should identify the draw round");
-assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/s, "pattern board should preserve the original seven-column number layout");
+assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*--pattern-cell-size: clamp/s, "inline pattern board cells should have a responsive size cap");
+assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*grid-template-columns: repeat\(7, var\(--pattern-cell-size\)\)/s, "pattern board should preserve the original seven-column number layout");
+assert.match(styles, /#patternBoard \.pattern-cell\s*\{[^}]*width: var\(--pattern-cell-size\)/s, "pattern board cells should not stretch to fill wide cards");
 assert.match(styles, /\.ticket-card \.ball-row\s*\{[^}]*flex-wrap: wrap/s, "ticket cards should wrap balls instead of overflowing the card edge");
 assert.match(styles, /\.ticket-card \.ball\s*\{[^}]*clamp/s, "ticket balls should scale inside narrow cards");
 assert.doesNotMatch(appSource, /우측 패턴 지도를 확인해 보세요/, "generation feedback should no longer reference a missing right-side panel");

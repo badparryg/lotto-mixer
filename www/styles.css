@@ -1359,17 +1359,19 @@ body.ticket-check-modal-open {
 }
 
 #patternBoard.pattern-board {
-  width: 100%;
+  --pattern-cell-size: clamp(1.8rem, 9cqw, 3.25rem);
+  width: fit-content;
   max-width: 100%;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.22rem;
+  grid-template-columns: repeat(7, var(--pattern-cell-size));
+  gap: clamp(0.18rem, 1cqw, 0.32rem);
+  justify-self: start;
   margin-top: 0.6rem;
 }
 
 #patternBoard .pattern-cell {
-  width: auto;
-  height: auto;
-  aspect-ratio: 1 / 1;
+  width: var(--pattern-cell-size);
+  height: var(--pattern-cell-size);
+  aspect-ratio: auto;
   border-radius: 7px;
   font-size: 0.68rem;
 }
