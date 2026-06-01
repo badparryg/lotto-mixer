@@ -142,10 +142,12 @@ const autoMixPortfolio = app.generateRecommendations(history, {
   profile: "random",
   ticketCount: 12,
   recentWindow: 24,
+  explorationCount: 100,
   seed: 20260526,
 });
 
 assert.equal(autoMixPortfolio.error, "", "auto mix portfolio generation should succeed");
+assert.equal(autoMixPortfolio.explorationCount, 100, "auto mix should honor the selected exploration count");
 assert.equal(autoMixPortfolio.tickets.length, 12, "auto mix should preserve requested ticket count");
 autoMixPortfolio.tickets.forEach((ticket, index) => {
   assert.ok(
@@ -326,6 +328,8 @@ assert.match(html, /ticketCheckUploadBtn/, "index should expose the desktop uplo
 assert.match(html, /ticketCheckRows/, "index should render the ticket result rows container");
 assert.match(html, /saveRecommendationBtn/, "index should render the save recommendation action");
 assert.match(html, /savedRecommendationsList/, "index should render the saved recommendations section");
+assert.match(html, /explorationCount/, "index should expose the auto mix exploration selector");
+assert.match(html, />100회</, "auto mix exploration selector should include the requested 100-run option");
 assert.doesNotMatch(html, /ticketCheckQuickButton/, "header quick button should be removed");
 assert.doesNotMatch(html, /QR 스캔 믹스형 \+ 당첨확인/, "pool mix profile should no longer include ticket checking");
 assert.match(html, /historySyncStatus/, "index should render history sync status");
@@ -350,6 +354,8 @@ assert.match(appSource, /latestPatternTarget/, "latest draw card should host the
 assert.match(appSource, /회 당첨번호 패턴 분석/, "latest draw pattern title should identify the draw round");
 assert.match(appSource, /selectPortfolioTickets/, "auto mix should select final rows as a diversified portfolio");
 assert.match(appSource, /portfolioCandidates/, "auto mix should sample extra candidates before choosing the final bundle");
+assert.match(appSource, /DEFAULT_AUTO_MIX_EXPLORATION_COUNT = 100/, "auto mix should default to 100 exploration runs");
+assert.match(appSource, /explorationCount: explorationCount/, "auto mix result should report the applied exploration count");
 assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*--pattern-cell-size: clamp/s, "inline pattern board cells should have a responsive size cap");
 assert.match(styles, /#patternBoard\.pattern-board\s*\{[^}]*grid-template-columns: repeat\(7, var\(--pattern-cell-size\)\)/s, "pattern board should preserve the original seven-column number layout");
 assert.match(styles, /#patternBoard \.pattern-cell\s*\{[^}]*width: var\(--pattern-cell-size\)/s, "pattern board cells should not stretch to fill wide cards");

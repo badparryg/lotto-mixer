@@ -27,6 +27,9 @@
   var MAX_SYNC_ROUNDS = 20;
   var SAVED_RECOMMENDATIONS_KEY = "lottoSavedRecommendations:v1";
   var MAX_SAVED_RECOMMENDATIONS = 12;
+  var DEFAULT_AUTO_MIX_EXPLORATION_COUNT = 100;
+  var MAX_AUTO_MIX_EXPLORATION_COUNT = 300;
+  var MAX_AUTO_MIX_PORTFOLIO_CANDIDATES = 1600;
   var appState = {
     history: Array.isArray(global.LOTTO_HISTORY) ? global.LOTTO_HISTORY.slice() : [],
     latestResult: null,
@@ -1452,6 +1455,19 @@
     return selected;
   }
 
+  function getAutoMixExplorationCount(options, profile) {
+    var raw = Number(options && options.explorationCount);
+
+    if (profile !== "random") {
+      return 1;
+    }
+    if (!Number.isFinite(raw) || raw < 1) {
+      raw = DEFAULT_AUTO_MIX_EXPLORATION_COUNT;
+    }
+
+    return Math.max(1, Math.min(MAX_AUTO_MIX_EXPLORATION_COUNT, Math.round(raw)));
+  }
+
   function buildTicketMeta(numbers, stats, filterState) {
     var oddCount = numbers.filter(function (number) {
       return number % 2 !== 0;
@@ -1480,6 +1496,7 @@
     var ticketCount = Number(options && options.ticketCount) || 5;
     var poolNumbers = options && options.poolNumbers ? options.poolNumbers : [];
     var recentWindow = Number(options && options.recentWindow) || 24;
+    var explorationCount = getAutoMixExplorationCount(options, profile);
     var filterState = buildFilterState(options);
     var stats = analyzeHistory(history, { recentWindow: recentWindow });
     var scoreTable = buildScoreTable(stats, profile).filter(function (item) {
@@ -1489,8 +1506,12 @@
     var tickets = [];
     var portfolioCandidates = [];
     var shouldOptimizePortfolio = (profile === "random" || profile === "pool_mix") && ticketCount > 1;
+    var basePortfolioCandidateLimit = Math.min(600, Math.max(ticketCount * 6, ticketCount + 25));
     var portfolioCandidateLimit = shouldOptimizePortfolio
-      ? Math.min(600, Math.max(ticketCount * 6, ticketCount + 25))
+      ? Math.min(
+          MAX_AUTO_MIX_PORTFOLIO_CANDIDATES,
+          basePortfolioCandidateLimit + (profile === "random" ? Math.max(0, explorationCount - 1) * ticketCount : 0),
+        )
       : ticketCount;
     var seen = new Set();
     var attempts = 0;
@@ -1513,10 +1534,10 @@
     }
 
     if (filterState.includedNumbers.length > 6) {
-      return { profile: profile, ticketCount: ticketCount, recentWindow: recentWindow, stats: stats, scoreTable: scoreTable, tickets: tickets, filterState: filterState, error: "고정 번호는 최대 6개까지 선택할 수 있습니다." };
+      return { profile: profile, ticketCount: ticketCount, recentWindow: recentWindow, explorationCount: explorationCount, stats: stats, scoreTable: scoreTable, tickets: tickets, filterState: filterState, error: "고정 번호는 최대 6개까지 선택할 수 있습니다." };
     }
     if (filterState.allowedNumbers.length < 6) {
-      return { profile: profile, ticketCount: ticketCount, recentWindow: recentWindow, stats: stats, scoreTable: scoreTable, tickets: tickets, filterState: filterState, error: "제외 조건이 너무 많아서 추천 후보가 6개보다 적습니다." };
+      return { profile: profile, ticketCount: ticketCount, recentWindow: recentWindow, explorationCount: explorationCount, stats: stats, scoreTable: scoreTable, tickets: tickets, filterState: filterState, error: "제외 조건이 너무 많아서 추천 후보가 6개보다 적습니다." };
     }
 
     scoreTable.forEach(function (item) {
@@ -1570,6 +1591,7 @@
       profile: profile,
       ticketCount: ticketCount,
       recentWindow: recentWindow,
+      explorationCount: explorationCount,
       stats: stats,
       scoreTable: scoreTable,
       tickets: tickets,
@@ -1736,11 +1758,13 @@
     var profileEl = document.getElementById("profile");
     var countEl = document.getElementById("ticketCount");
     var windowEl = document.getElementById("recentWindow");
+    var explorationEl = document.getElementById("explorationCount");
 
     return {
       profile: profileEl ? profileEl.value : "balanced",
       ticketCount: countEl ? countEl.value : "5",
       recentWindow: windowEl ? windowEl.value : "24",
+      explorationCount: explorationEl ? explorationEl.value : String(DEFAULT_AUTO_MIX_EXPLORATION_COUNT),
       includedNumbers: includedNumbers,
       excludedNumbers: excludedNumbers,
       poolNumbers: Array.from(appState.poolNumberSet).sort(function(a,b){return a-b;})
@@ -1967,14 +1991,17 @@
     var includeSummary = formatIncludeSummary(result.filterState);
     var activeIndex = appState.activePatternSource === "ticket" ? clampTicketIndex(appState.activeTicketIndex, result) : -1;
     var patternSource = appState.activePatternSource === "latest" ? "latest" : appState.activePatternSource === "ticket" ? "ticket" : null;
+    var explorationSummary = result.profile === "random" && result.explorationCount > 1
+      ? " / 탐색 " + result.explorationCount + "회"
+      : "";
 
     var sourcePattern = detachPatternPanel();
 
     if (generationMeta) {
-      generationMeta.textContent = PROFILE_COPY[result.profile] + " / 최근 " + result.recentWindow + "회 특별 반영 / " + includeSummary + " / " + filterSummary;
+      generationMeta.textContent = PROFILE_COPY[result.profile] + explorationSummary + " / 최근 " + result.recentWindow + "회 특별 반영 / " + includeSummary + " / " + filterSummary;
     }
     if (feedback) {
-      feedback.textContent = result.error ? result.error : PROFILE_COPY[result.profile] + " 기준으로 " + result.ticketCount + "개 조합이 생성되었습니다. 카드를 눌러 패턴 지도를 확인해 보세요.";
+      feedback.textContent = result.error ? result.error : PROFILE_COPY[result.profile] + explorationSummary + " 기준으로 " + result.ticketCount + "개 조합이 생성되었습니다. 카드를 눌러 패턴 지도를 확인해 보세요.";
     }
     if (!target) {
       renderPatternPanel(result, activeIndex);
@@ -2534,12 +2561,16 @@
     if (profileEl && poolPanel) {
       function togglePoolPanel() {
         var recentWindowField = document.getElementById("recentWindowField");
+        var explorationCountField = document.getElementById("explorationCountField");
         if (profileEl.value === "pool_mix") {
           poolPanel.style.display = "block";
           if (recentWindowField) recentWindowField.style.display = "none";
         } else {
           poolPanel.style.display = "none";
           if (recentWindowField) recentWindowField.style.display = "";
+        }
+        if (explorationCountField) {
+          explorationCountField.style.display = profileEl.value === "random" ? "" : "none";
         }
         if (typeof renderPoolGrid === "function") renderPoolGrid();
       }
