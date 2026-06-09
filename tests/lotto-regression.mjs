@@ -333,6 +333,7 @@ assert.match(html, /ticketCheckModal/, "index should render the dedicated ticket
 assert.match(html, /openTicketCheckModalBtn/, "index should render the bottom ticket check launch button");
 assert.match(html, /ticketCheckUploadBtn/, "index should expose the desktop upload fallback");
 assert.match(html, /ticketCheckRows/, "index should render the ticket result rows container");
+assert.match(html, /<option value="3">3개<\/option>/, "ticket count selector should include a three-ticket option");
 assert.match(html, /saveRecommendationBtn/, "index should render the save recommendation action");
 assert.match(html, /savedRecommendationsList/, "index should render the saved recommendations section");
 assert.match(html, /explorationCount/, "index should expose the auto mix exploration selector");
