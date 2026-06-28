@@ -671,7 +671,7 @@
       : "일치 번호 없음";
 
     if (game.bonusMatch) {
-      matchedCopy += game.matchedNumbers.length ? " · 보너스 일치" : "보너스 일치";
+      matchedCopy += " · 보너스 일치";
     }
 
     return matchedCopy;
@@ -752,6 +752,7 @@
             '<div class="saved-pick-row__status">' +
             '<span class="saved-pick-row__game">' + game.letter + "</span>" +
             '<span class="ticket-rank-badge ' + rankClass + '">' + escapeHtml(game.rank.label) + "</span>" +
+            '<p class="saved-pick-row__match">' + escapeHtml(buildTicketGameMatchCopy(game)) + "</p>" +
             "</div>" +
             '<div class="saved-pick-row__numbers">' +
             '<div class="saved-pick-row__balls">' +
@@ -759,7 +760,6 @@
               return buildSavedRecommendationBallMarkup(number, game, evaluation.draw);
             }).join("") +
             "</div>" +
-            '<p class="saved-pick-row__match">' + escapeHtml(buildTicketGameMatchCopy(game)) + "</p>" +
             "</div>" +
             "</article>"
           );

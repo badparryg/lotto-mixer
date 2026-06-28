@@ -289,6 +289,25 @@ assert.doesNotMatch(
   "ticket result rows should not repeat the miss summary below the badge",
 );
 
+const latestDraw = history.at(-1);
+const bonusOnlyNumbers = Array.from({ length: 45 }, (_, index) => index + 1)
+  .filter((number) => number !== latestDraw.bonus && !latestDraw.numbers.includes(number))
+  .slice(0, 5)
+  .concat(latestDraw.bonus)
+  .sort((left, right) => left - right);
+
+app.renderScannedTicketResults({ round: latestDraw.round, games: [bonusOnlyNumbers] });
+assert.match(
+  ticketCheckDom.ticketCheckRows.innerHTML,
+  /일치 번호 없음 · 보너스 일치/,
+  "bonus-only result copy should include a visible separator",
+);
+assert.doesNotMatch(
+  ticketCheckDom.ticketCheckRows.innerHTML,
+  /없음보너스/,
+  "bonus-only result copy should not concatenate words",
+);
+
 const evaluatedTicket = app.evaluateScannedTicket(scannedTicket, history);
 assert.equal(evaluatedTicket.status, "ready", "known rounds should evaluate immediately");
 assert.equal(evaluatedTicket.games[0].rank.label, "1등", "perfect matches should be recognized as first prize");
@@ -365,6 +384,11 @@ assert.match(appSource, /SAVED_RECOMMENDATIONS_KEY/, "app should define a saved 
 assert.match(appSource, /buildSavedRecommendation/, "app should build savable recommendation bundles");
 assert.match(appSource, /renderSavedRecommendations/, "app should render saved recommendation cards");
 assert.match(appSource, /saved-pick-row__status/, "saved recommendation rows should place result badges beside game letters");
+assert.match(
+  appSource,
+  /saved-pick-row__status[\s\S]+saved-pick-row__match[\s\S]+saved-pick-row__numbers/,
+  "saved recommendation match copy should sit in the top status line before the number balls",
+);
 assert.doesNotMatch(appSource, /saved-pick-row__result-copy/, "saved recommendation rows should not render redundant rank summaries");
 assert.doesNotMatch(appSource, /ticket-check-row__result-copy/, "ticket check rows should not render redundant rank summaries");
 assert.match(appSource, /카드를 눌러 패턴 지도를 확인해 보세요/, "generation feedback should describe inline pattern access");

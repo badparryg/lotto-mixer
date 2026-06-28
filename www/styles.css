@@ -1219,9 +1219,9 @@ body.ticket-check-modal-open {
 
 .saved-pick-row {
   display: grid;
-  grid-template-columns: minmax(6.8rem, auto) minmax(0, 1fr);
-  gap: 0.8rem;
-  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  align-items: start;
   padding: 0.8rem 0.9rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.03);
@@ -1231,7 +1231,8 @@ body.ticket-check-modal-open {
 .saved-pick-row__status {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
   justify-self: start;
   min-width: 0;
   max-width: 100%;
@@ -1251,12 +1252,12 @@ body.ticket-check-modal-open {
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
-  line-height: 1.45;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .saved-pick-row__numbers {
-  display: grid;
-  gap: 0.45rem;
+  min-width: 0;
 }
 
 .saved-pick-row__balls {
