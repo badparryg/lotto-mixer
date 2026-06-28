@@ -912,7 +912,7 @@ body.ticket-check-modal-open {
 .ticket-check-board__head,
 .ticket-check-row {
   display: grid;
-  grid-template-columns: 82px 150px minmax(0, 1fr);
+  grid-template-columns: minmax(8rem, 10rem) minmax(0, 1fr);
 }
 
 .ticket-check-board__head {
@@ -939,31 +939,24 @@ body.ticket-check-modal-open {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.ticket-check-row__game {
+.ticket-check-row__status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.ticket-check-row__result {
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 0.32rem;
+  justify-content: flex-start;
+  gap: 0.45rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%),
     rgba(7, 16, 29, 0.55);
 }
 
-.ticket-check-row__result-copy {
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 700;
-  text-align: center;
+.ticket-check-row__game {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
 }
 
 .ticket-check-row__numbers {
@@ -1226,7 +1219,7 @@ body.ticket-check-modal-open {
 
 .saved-pick-row {
   display: grid;
-  grid-template-columns: 2.3rem minmax(5.2rem, 7rem) minmax(0, 1fr);
+  grid-template-columns: minmax(6.8rem, auto) minmax(0, 1fr);
   gap: 0.8rem;
   align-items: center;
   padding: 0.8rem 0.9rem;
@@ -1235,20 +1228,25 @@ body.ticket-check-modal-open {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.saved-pick-row__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .saved-pick-row__game {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--text);
-  text-align: center;
 }
 
-.saved-pick-row__result {
-  display: grid;
-  gap: 0.3rem;
-  justify-items: start;
-}
-
-.saved-pick-row__result-copy,
 .saved-pick-row__match {
   margin: 0;
   color: var(--muted);
@@ -1844,15 +1842,14 @@ body.ticket-check-modal-open {
     grid-template-columns: 1fr;
   }
 
-  .saved-pick-row__game,
-  .saved-pick-row__result {
-    justify-items: start;
+  .saved-pick-row__status {
+    justify-content: flex-start;
     text-align: left;
   }
 
   .ticket-check-board__head,
   .ticket-check-row {
-    grid-template-columns: 64px 118px minmax(0, 1fr);
+    grid-template-columns: minmax(7.5rem, 9rem) minmax(0, 1fr);
   }
 
   .ticket-check-game-ball {
@@ -1947,16 +1944,14 @@ body.ticket-check-modal-open {
   }
 
   .ticket-check-row {
-    grid-template-columns: 56px 1fr;
+    grid-template-columns: 1fr;
   }
 
   .ticket-check-row__game {
     font-size: 1.35rem;
   }
 
-  .ticket-check-row__result {
-    grid-column: 2;
-    justify-items: start;
+  .ticket-check-row__status {
     padding-bottom: 0.4rem !important;
   }
 
@@ -1966,8 +1961,7 @@ body.ticket-check-modal-open {
   }
 
   .ticket-check-row__numbers,
-  .ticket-check-row__result,
-  .ticket-check-row__game {
+  .ticket-check-row__status {
     border-right: 0;
   }
 

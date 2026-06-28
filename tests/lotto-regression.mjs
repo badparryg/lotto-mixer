@@ -278,6 +278,16 @@ assert.equal(
   "rendered ticket results should include all five ticket rows",
 );
 assert.match(ticketCheckDom.ticketCheckRows.innerHTML, />E</, "rendered ticket results should include the final E row");
+assert.match(
+  ticketCheckDom.ticketCheckRows.innerHTML,
+  /ticket-check-row__status/,
+  "ticket result rows should place the rank badge beside the game letter",
+);
+assert.doesNotMatch(
+  ticketCheckDom.ticketCheckRows.innerHTML,
+  /당첨 조건 미달/,
+  "ticket result rows should not repeat the miss summary below the badge",
+);
 
 const evaluatedTicket = app.evaluateScannedTicket(scannedTicket, history);
 assert.equal(evaluatedTicket.status, "ready", "known rounds should evaluate immediately");
@@ -354,6 +364,9 @@ assert.match(appSource, /ticketCheckCameraUnavailable/, "app should remember uns
 assert.match(appSource, /SAVED_RECOMMENDATIONS_KEY/, "app should define a saved recommendation storage key");
 assert.match(appSource, /buildSavedRecommendation/, "app should build savable recommendation bundles");
 assert.match(appSource, /renderSavedRecommendations/, "app should render saved recommendation cards");
+assert.match(appSource, /saved-pick-row__status/, "saved recommendation rows should place result badges beside game letters");
+assert.doesNotMatch(appSource, /saved-pick-row__result-copy/, "saved recommendation rows should not render redundant rank summaries");
+assert.doesNotMatch(appSource, /ticket-check-row__result-copy/, "ticket check rows should not render redundant rank summaries");
 assert.match(appSource, /카드를 눌러 패턴 지도를 확인해 보세요/, "generation feedback should describe inline pattern access");
 assert.match(appSource, /이번 세트 기준 실시간 갱신/, "hero signal card should explain that it reacts to the current set");
 assert.match(appSource, /이번 세트 .*장 · 누적/, "hero signal card should reflect current-set capture counts for hot signals");

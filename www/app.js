@@ -745,12 +745,13 @@
       '<div class="saved-pick-card__rows">' +
       evaluation.games
         .map(function (game) {
+          var rankClass = getTicketRankBadgeClass(game.rank);
+
           return (
             '<article class="saved-pick-row">' +
-            '<div class="saved-pick-row__game">' + game.letter + "</div>" +
-            '<div class="saved-pick-row__result">' +
-            '<span class="ticket-rank-badge ' + getTicketRankBadgeClass(game.rank) + '">' + escapeHtml(game.rank.label) + "</span>" +
-            '<p class="saved-pick-row__result-copy">' + escapeHtml(game.rank.summary) + "</p>" +
+            '<div class="saved-pick-row__status">' +
+            '<span class="saved-pick-row__game">' + game.letter + "</span>" +
+            '<span class="ticket-rank-badge ' + rankClass + '">' + escapeHtml(game.rank.label) + "</span>" +
             "</div>" +
             '<div class="saved-pick-row__numbers">' +
             '<div class="saved-pick-row__balls">' +
@@ -867,10 +868,9 @@
 
         return (
           '<article class="ticket-check-row">' +
-          '<div class="ticket-check-row__game">' + game.letter + "</div>" +
-          '<div class="ticket-check-row__result">' +
+          '<div class="ticket-check-row__status">' +
+          '<span class="ticket-check-row__game">' + game.letter + "</span>" +
           '<span class="ticket-rank-badge ' + rankClass + '">' + game.rank.label + "</span>" +
-          '<span class="ticket-check-row__result-copy">' + game.rank.summary + "</span>" +
           "</div>" +
           '<div class="ticket-check-row__numbers">' +
           '<div class="ticket-check-row__ball-list">' +
